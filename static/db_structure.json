@@ -1,0 +1,112 @@
+{
+    "structure": {
+        "analytics": [],
+        "datasets_db": [
+            {
+              "tablename": "nba_games",
+              "description": "Contains detailed information about NBA games, including teams, scores, game types, attendance, and game metadata."
+            },
+            {
+              "tablename": "netflix",
+              "description": "Holds metadata of Netflix shows and movies, covering details like title, director, release year, genre, duration, and ratings."
+            },
+            {
+              "tablename": "olympics_athletes",
+              "description": "Provides data on Olympic athletes, including demographic details (age, sex), sports participation, events, and medals won."
+            },
+            {
+              "tablename": "spotify",
+              "description": "Stores information about Spotify tracks, including song IDs, names, genres, artists, albums, popularity metrics, and explicit content flags."
+            }
+          ],
+        "music": [],
+        "people": [
+            {
+              "tablename": "Ages",
+              "description": "Simple dataset mapping names to their corresponding ages, useful for basic demographic queries."
+            },
+            {
+              "tablename": "Users",
+              "description": "Contains basic user information like names and email addresses, useful for user management or authentication systems."
+            }
+          ]
+    },
+    "schema": {
+    "analytics": {},
+    "datasets_db": {
+      "nba_games": [
+        { "column_name": "gameId", "data_type": "bigint", "description": "Unique identifier for each game." },
+        { "column_name": "gameDate", "data_type": "text", "description": "Date and time when the game was played." },
+        { "column_name": "hometeamCity", "data_type": "text", "description": "City of the home team." },
+        { "column_name": "hometeamName", "data_type": "text", "description": "Name of the home team." },
+        { "column_name": "hometeamId", "data_type": "bigint", "description": "Unique ID representing the home team." },
+        { "column_name": "awayteamCity", "data_type": "text", "description": "City of the away team." },
+        { "column_name": "awayteamName", "data_type": "text", "description": "Name of the away team." },
+        { "column_name": "awayteamId", "data_type": "bigint", "description": "Unique ID representing the away team." },
+        { "column_name": "homeScore", "data_type": "bigint", "description": "Total score achieved by the home team." },
+        { "column_name": "awayScore", "data_type": "bigint", "description": "Total score achieved by the away team." },
+        { "column_name": "winner", "data_type": "bigint", "description": "ID of the winning team." },
+        { "column_name": "gameType", "data_type": "text", "description": "Type of the game, such as Regular Season or Playoffs." },
+        { "column_name": "attendance", "data_type": "double", "description": "Number of attendees present at the game." },
+        { "column_name": "arenaId", "data_type": "bigint", "description": "Identifier for the arena where the game was held." },
+        { "column_name": "gameLabel", "data_type": "text", "description": "Label providing additional context or categorization for the game." },
+        { "column_name": "gameSubLabel", "data_type": "text", "description": "Additional sub-label for more granular game classification." },
+        { "column_name": "seriesGameNumber", "data_type": "double", "description": "Indicates the game number in a playoff series." }
+      ],
+
+      "netflix": [
+        { "column_name": "show_id", "data_type": "text", "description": "Unique identifier for each show or movie." },
+        { "column_name": "type", "data_type": "text", "description": "Indicates whether the content is a Movie or a TV Show." },
+        { "column_name": "title", "data_type": "text", "description": "Title of the show or movie." },
+        { "column_name": "director", "data_type": "text", "description": "Name of the director responsible for the content." },
+        { "column_name": "country", "data_type": "text", "description": "Country of origin where the content was produced." },
+        { "column_name": "date_added", "data_type": "text", "description": "Date when the content was added to Netflix." },
+        { "column_name": "release_year", "data_type": "bigint", "description": "Year when the content was originally released." },
+        { "column_name": "rating", "data_type": "text", "description": "Content rating (e.g., PG-13, TV-MA) indicating suitability for different audiences." },
+        { "column_name": "duration", "data_type": "text", "description": "Length of the movie or number of seasons for TV shows." },
+        { "column_name": "listed_in", "data_type": "text", "description": "Genres or categories the content is listed under." }
+      ],
+
+      "olympics_athletes": [
+        { "column_name": "ID", "data_type": "bigint", "description": "Unique identifier for each athlete." },
+        { "column_name": "Name", "data_type": "text", "description": "Full name of the athlete." },
+        { "column_name": "Sex", "data_type": "text", "description": "Gender of the athlete (M/F)." },
+        { "column_name": "Age", "data_type": "double", "description": "Age of the athlete during the event." },
+        { "column_name": "Height", "data_type": "double", "description": "Height of the athlete in centimeters." },
+        { "column_name": "Weight", "data_type": "double", "description": "Weight of the athlete in kilograms." },
+        { "column_name": "Team", "data_type": "text", "description": "The team or country the athlete represented." },
+        { "column_name": "NOC", "data_type": "text", "description": "National Olympic Committee code representing the athlete's country." },
+        { "column_name": "Games", "data_type": "text", "description": "Name of the Olympic games (e.g., '1992 Summer')." },
+        { "column_name": "Year", "data_type": "bigint", "description": "Year the athlete competed in the Olympics." },
+        { "column_name": "Season", "data_type": "text", "description": "Olympic season: Summer or Winter." },
+        { "column_name": "City", "data_type": "text", "description": "Host city of the Olympic games." },
+        { "column_name": "Sport", "data_type": "text", "description": "Sport category in which the athlete competed." },
+        { "column_name": "Event", "data_type": "text", "description": "Specific event within the sport." },
+        { "column_name": "Medal", "data_type": "text", "description": "Medal won by the athlete (Gold, Silver, Bronze, or NA)." }
+      ],
+
+      "spotify": [
+        { "column_name": "id", "data_type": "text", "description": "Unique identifier for each song." },
+        { "column_name": "name", "data_type": "text", "description": "Name of the track or song." },
+        { "column_name": "genre", "data_type": "text", "description": "Musical genre of the track (e.g., Pop, Acoustic)." },
+        { "column_name": "artists", "data_type": "text", "description": "Artists who performed the track." },
+        { "column_name": "album", "data_type": "text", "description": "Album in which the track is included." },
+        { "column_name": "popularity", "data_type": "bigint", "description": "Popularity score of the track based on Spotify metrics." },
+        { "column_name": "duration_ms", "data_type": "bigint", "description": "Duration of the track in milliseconds." },
+        { "column_name": "explicit", "data_type": "tinyint(1)", "description": "Indicates if the track contains explicit content (1 = Yes, 0 = No)." }
+      ]
+    },
+
+    "music": {},
+    "people": {
+      "Ages": [
+        { "column_name": "name", "data_type": "varchar(128)", "description": "Name of the individual." },
+        { "column_name": "age", "data_type": "int", "description": "Age of the individual." }
+      ],
+      "Users": [
+        { "column_name": "name", "data_type": "varchar(128)", "description": "Full name of the user." },
+        { "column_name": "email", "data_type": "varchar(128)", "description": "Email address of the user." }
+      ]
+    }
+  }
+}
