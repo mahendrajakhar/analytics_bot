@@ -11,6 +11,10 @@ import re
 import logging
 from typing import Dict, Any
 from datetime import datetime
+import matplotlib.pyplot as plt
+from services.mongodb_service import MongoDBService
+import io
+import time
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -20,16 +24,16 @@ class ChatService:
     def __init__(self, db: Session):
         self.db = db
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        self.sql_service = SQLService()
+        self.sql_service = SQLService(db)
+        self.mongodb_service = MongoDBService()
 
     async def process_chat(self, request: ChatRequest) -> ChatResponse:
         try:
-            # Get database schema and history
-            schema = await self.sql_service.get_table_schema()
+            # Load chat history
             history = self._load_history(request.user_id)
             
-            # Prepare conversation context with schema
-            messages = self._prepare_conversation_context(history, request.question, schema)
+            # Prepare conversation context with schema from JSON
+            messages = self._prepare_conversation_context(history, request.question)
             
             # Get AI response
             response = await self.client.chat.completions.create(
@@ -54,42 +58,64 @@ class ChatService:
                 elif query_result:
                     try:
                         formatted_result = self._format_sql_result(query_result)
-                        assistant_response += f"\nSQL Result: {formatted_result}"
+                        assistant_response = f"\nSQL Result: {formatted_result}"
                     except Exception as e:
                         assistant_response += f"\nError formatting results: {str(e)}"
 
             # Generate graph if code is present
-            if graph_code:
+            if graph_code and query_result:
                 try:
-                    if query_result:
-                        graph_url = generate_graph(graph_code, query_result)
-                    else:
-                        graph_url = generate_graph(graph_code)
+                    logger.info("\n\n\nExecuting graph code...")
+                    
+                    # Clear any existing plots
+                    plt.clf()
+                    plt.close('all')
+                    
+                    # Create new figure
+                    plt.figure(figsize=(10, 6))
+                    
+                    # Create namespace with query results
+                    local_namespace = {
+                        'plt': plt,
+                        'sql_result': query_result
+                    }
+                    
+                    # Execute graph code
+                    exec(graph_code, globals(), local_namespace)
+                    
+                    # Ensure proper rendering
+                    plt.tight_layout()
+                    
+                    # Save to buffer
+                    img_buffer = io.BytesIO()
+                    plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
+                    img_buffer.seek(0)
+                    
+                    # Store in MongoDB
+                    graph_url = self.mongodb_service.store_image(
+                        img_buffer.getvalue(),
+                        f"graph_{int(time.time())}.png",
+                        request.user_id
+                    )
+                    
+                    # Clean up
+                    plt.close('all')
+                    
+                    logger.info(f"\n\n\nGraph stored with URL: {graph_url}")
+                    
                 except Exception as e:
-                    # logger.error(f"Error generating graph: {str(e)}", exc_info=True)
-                    pass
-
-            # Comment out database storage for now
-            # try:
-            #     chat_history = ChatHistory(
-            #         user_id=request.user_id,
-            #         question=request.question,
-            #         sql_query=sql_query,
-            #         response=assistant_response
-            #     )
-            #     self.db.add(chat_history)
-            #     self.db.commit()
-            # except Exception:
-            #     self.db.rollback()
+                    logger.error(f"Graph generation error: {e}")
+                    plt.close('all')  # Ensure cleanup on error
 
             # Save to JSON file
-            try:
-                self._save_history(request.user_id, request.question, sql_query, assistant_response, graph_code)
-            except Exception as e:
-                # logger.error(f"Error saving to JSON file: {str(e)}", exc_info=True)
-                pass
+            self._save_to_json(
+                request.user_id,
+                request.question,
+                sql_query,
+                assistant_response,
+                graph_url
+            )
 
-            # Return response with proper dictionary structure
             return ChatResponse(
                 response=assistant_response,
                 sql_query=sql_query,
@@ -99,34 +125,40 @@ class ChatService:
             )
 
         except Exception as e:
-            # logger.error(f"Unexpected error in process_chat: {str(e)}", exc_info=True)
+            logger.error(f"Unexpected error in process_chat: {str(e)}", exc_info=True)
             raise
 
-    def _prepare_conversation_context(self, history, new_question, schema: Dict[str, Any]):
-        system_message = """You are a SQL assistant for MySQL. Generate SQL queries and graph code as needed.
+    def _prepare_conversation_context(self, history, new_question):
+        """Prepare conversation context with schema from JSON file"""
+        try:
+            # Load schema from JSON file
+            with open("static/db_structure.json", "r") as f:
+                db_structure = json.load(f)
+
+            system_message = """You are a SQL assistant for MySQL. Generate SQL queries and graph code as needed.
 Available tables and their schemas:
 """
-        # Add schema information
-        for table, columns in schema.items():
-            system_message += f"\n{table}:\n"
-            for col in columns:
-                system_message += f"  - {col['column_name']} ({col['data_type']})\n"
+            # Add schema directly from JSON file
+            system_message += f"\n{json.dumps(db_structure, indent=2)}\n"
 
-        # Add instructions for graph generation
-        system_message += "\nWhen generating graphs:\n"
-        system_message += "1. Use matplotlib for visualization\n"
-        system_message += "2. Access SQL results through the 'sql_result' dictionary\n"
-        system_message += "3. Format code blocks with ```sql and ```python markers\n"
+            # Add instructions for graph generation
+            system_message += "\nWhen generating graphs:\n"
+            system_message += "1. Use matplotlib for visualization\n"
+            system_message += "2. Access SQL results through the 'sql_result' dictionary\n"
+            system_message += "3. Format code blocks with ```sql and ```python markers\n"
 
-        messages = [{"role": "system", "content": system_message}]
-        
-        # Add chat history
-        for chat in history[-5:]:  # Last 5 messages for context
-            messages.append({"role": "user", "content": chat['question']})
-            messages.append({"role": "assistant", "content": chat['response']})
-        
-        messages.append({"role": "user", "content": new_question})
-        return messages
+            messages = [{"role": "system", "content": system_message}]
+            
+            # Add chat history
+            for chat in history[-5:]:  # Last 5 messages for context
+                messages.append({"role": "user", "content": chat['question']})
+                messages.append({"role": "assistant", "content": chat['response']})
+            
+            messages.append({"role": "user", "content": new_question})
+            return messages
+        except Exception as e:
+            logger.error(f"Error preparing conversation context: {e}")
+            raise
 
     def _extract_sql_query(self, response: str) -> str:
         if "```sql" in response:
@@ -231,4 +263,41 @@ Available tables and their schemas:
             with open(history_path, 'w') as file:
                 json.dump(all_history, file, indent=4)
         except Exception as e:
-            print(f"Error saving history: {str(e)}") 
+            print(f"Error saving history: {str(e)}")
+
+    def _save_to_json(self, user_id: str, question: str, sql_query: str, response: str, graph_url: str = None):
+        """Save chat history to JSON file alongside existing storage methods"""
+        try:
+            history_file = "static/chat_history.json"
+            
+            # Create default structure if file doesn't exist
+            if not os.path.exists(history_file):
+                with open(history_file, "w") as f:
+                    json.dump({}, f)
+            
+            # Read existing history
+            with open(history_file, "r") as f:
+                all_history = json.load(f)
+            
+            # Initialize user history if not exists
+            if user_id not in all_history:
+                all_history[user_id] = []
+            
+            # Add new chat entry
+            chat_entry = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "question": question,
+                "sql_query": sql_query,
+                "response": response,
+                "graph_url": graph_url
+            }
+            
+            all_history[user_id].append(chat_entry)
+            
+            # Save updated history
+            with open(history_file, "w") as f:
+                json.dump(all_history, f, indent=2)
+            
+        except Exception as e:
+            logger.error(f"Error saving to JSON file: {e}")
+            # Don't raise exception to avoid interrupting main flow 

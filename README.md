@@ -133,3 +133,20 @@ Currently supports tables in datasets_db:
 - netflix
 - olympics_athletes
 - spotify
+
+
+for running it on openweb url 
+1. Install ngrok
+brew install ngrok/ngrok/ngrok
+2. Sign Up and Get Auth Token (Optional but Recommended)
+ngrok config add-authtoken YOUR_AUTH_TOKEN
+3. Run Your FastAPI App Locally
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+4. Expose Your Localhost Using ngrok
+ngrok http 8000
+
+```Bonus Tips
+Keep the ngrok terminal open while testing.
+If you want to keep the same URL every time:
+only for paid users
+ngrok http --region=us --subdomain=customname 8000```

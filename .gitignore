@@ -1,3 +1,5 @@
 .env
 .cursorignore
 venv/
+static/images/*
+all_code.txt
