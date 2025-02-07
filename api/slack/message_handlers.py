@@ -143,4 +143,34 @@ def send_excel_file(channel_id: str, excel_buffer: io.BytesIO, preview: str):
         filename="query_results.xlsx",
         title="Query Results",
         initial_comment="📊 Download complete results"
+    )
+
+def update_with_sql(channel_id: str, ts: str, sql_query: str):
+    """Update message with SQL query"""
+    return slack_client.chat_update(
+        channel=channel_id,
+        ts=ts,
+        text=f"Here's your SQL query:\n```sql\n{sql_query}\n```",
+        blocks=[{
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"Here's your SQL query:\n```sql\n{sql_query}\n```"
+            }
+        }]
+    )
+
+def update_with_help(channel_id: str, ts: str, help_text: str):
+    """Update message with help text"""
+    return slack_client.chat_update(
+        channel=channel_id,
+        ts=ts,
+        text=help_text,
+        blocks=[{
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": help_text
+            }
+        }]
     ) 

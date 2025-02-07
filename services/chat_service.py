@@ -15,6 +15,9 @@ import matplotlib.pyplot as plt
 from services.mongodb_service import MongoDBService
 import io
 import time
+from api.slack.message_handlers import (update_final_message)
+from api.slack.formatters import format_slack_message
+import uuid
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -107,13 +110,16 @@ class ChatService:
                     logger.error(f"Graph generation error: {e}")
                     plt.close('all')  # Ensure cleanup on error
 
-            # Save to JSON file
-            self._save_to_json(
-                request.user_id,
-                request.question,
-                sql_query,
-                assistant_response,
-                graph_url
+            # Save history with all details
+            self._save_history(
+                user_id=request.user_id,
+                command="/graph" if graph_code else "/ask",
+                question=request.question,
+                sql_query=sql_query,
+                response=assistant_response,
+                ai_response=response.choices[0].message.content,
+                graph_code=graph_code,
+                graph_url=graph_url
             )
 
             return ChatResponse(
@@ -214,90 +220,370 @@ Available tables and their schemas:
             raise
 
     def _load_history(self, user_id: str):
-        """Load chat history from JSON file"""
-        history_path = "static/chat_history.json"
-        os.makedirs("static", exist_ok=True)  # Ensure static directory exists
-        
-        if os.path.exists(history_path):
-            try:
-                with open(history_path, 'r') as file:
-                    all_history = json.load(file)
-                    return all_history.get(user_id, [])
-            except json.JSONDecodeError:
-                print("Error reading history file, starting fresh")
-                return []
-        return []
-
-    def _save_history(self, user_id, question, sql_query, response, graph_code):
-        """Save chat history to JSON file"""
-        history_path = "static/chat_history.json"
-        os.makedirs("static", exist_ok=True)  # Ensure static directory exists
-        
-        # Load existing history or create new
-        all_history = {}
-        if os.path.exists(history_path):
-            try:
-                with open(history_path, 'r') as file:
-                    all_history = json.load(file)
-            except json.JSONDecodeError:
-                print("Error reading history file, starting fresh")
-
-        # Get or create user history
-        user_history = all_history.get(user_id, [])
-        
-        # Add new entry
-        user_history.append({
-            "question": question,
-            "sql_query": sql_query,
-            "response": response,
-            "graph_code": graph_code,
-            "timestamp": str(datetime.now())  # Add timestamp for reference
-        })
-
-        # Keep only last 50 conversations
-        user_history = user_history[-50:]
-        
-        # Update and save
-        all_history[user_id] = user_history
+        """Load chat history from MySQL"""
         try:
-            with open(history_path, 'w') as file:
-                json.dump(all_history, file, indent=4)
+            from models import ChatHistory
+            
+            # Query last 5 chat entries
+            history = (
+                self.db.query(ChatHistory)
+                .filter(ChatHistory.user_id == user_id)
+                .order_by(ChatHistory.timestamp.desc())
+                .limit(5)
+                .all()
+            )
+            
+            return [
+                {
+                    'command': chat.command,
+                    'question': chat.question,
+                    'ai_response': chat.ai_response,
+                    'conversation_id': chat.conversation_id,
+                    'timestamp': chat.timestamp.isoformat()
+                }
+                for chat in reversed(history)
+            ]
+            
         except Exception as e:
-            print(f"Error saving history: {str(e)}")
+            logger.error(f"Error loading history: {e}")
+            return []
 
-    def _save_to_json(self, user_id: str, question: str, sql_query: str, response: str, graph_url: str = None):
-        """Save chat history to JSON file alongside existing storage methods"""
+    def _save_history(self, user_id: str, command: str, question: str, sql_query: str, 
+                     response: str, ai_response: str, conversation_id: str = None,
+                     sql_error: str = None, graph_code: str = None, 
+                     graph_url: str = None):
+        """Save chat history to both MySQL and JSON"""
         try:
+            # Generate conversation ID if not provided
+            if not conversation_id:
+                conversation_id = str(uuid.uuid4())
+
+            # Save to MySQL
+            from models import ChatHistory
+            
+            chat_entry = ChatHistory(
+                conversation_id=conversation_id,
+                user_id=user_id,
+                command=command,
+                question=question,
+                sql_query=sql_query,
+                sql_error=sql_error,
+                response=response,
+                ai_response=ai_response,
+                graph_code=graph_code,
+                graph_url=graph_url
+            )
+            
+            self.db.add(chat_entry)
+            self.db.commit()
+
+            # Save to JSON
             history_file = "static/chat_history.json"
+            os.makedirs("static", exist_ok=True)
             
-            # Create default structure if file doesn't exist
-            if not os.path.exists(history_file):
-                with open(history_file, "w") as f:
-                    json.dump({}, f)
-            
-            # Read existing history
-            with open(history_file, "r") as f:
-                all_history = json.load(f)
-            
-            # Initialize user history if not exists
+            # Load existing or create new
+            all_history = {}
+            if os.path.exists(history_file):
+                try:
+                    with open(history_file, 'r') as f:
+                        all_history = json.load(f)
+                except json.JSONDecodeError:
+                    pass
+
             if user_id not in all_history:
                 all_history[user_id] = []
             
-            # Add new chat entry
-            chat_entry = {
+            # Add new entry
+            json_entry = {
                 "timestamp": datetime.utcnow().isoformat(),
+                "conversation_id": conversation_id,
+                "command": command,
                 "question": question,
                 "sql_query": sql_query,
+                "sql_error": sql_error,
                 "response": response,
+                "ai_response": ai_response,
+                "graph_code": graph_code,
                 "graph_url": graph_url
             }
             
-            all_history[user_id].append(chat_entry)
+            all_history[user_id].append(json_entry)
             
-            # Save updated history
-            with open(history_file, "w") as f:
+            # Keep last 50 conversations
+            all_history[user_id] = all_history[user_id][-50:]
+            
+            # Save to file
+            with open(history_file, 'w') as f:
                 json.dump(all_history, f, indent=2)
             
+            return conversation_id
+            
         except Exception as e:
-            logger.error(f"Error saving to JSON file: {e}")
-            # Don't raise exception to avoid interrupting main flow 
+            logger.error(f"Error saving history: {e}")
+            self.db.rollback()
+            return None
+
+    async def get_sql_only(self, request: ChatRequest) -> ChatResponse:
+        """Get SQL query without executing it"""
+        try:
+            history = self._load_history(request.user_id)
+            messages = self._prepare_conversation_context(history, 
+                "Generate only SQL query for this question: " + request.question)
+            
+            response = await self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                temperature=0.7
+            )
+
+            assistant_response = response.choices[0].message.content
+            sql_query = self._extract_sql_query(assistant_response)
+            
+            self._save_history(
+                user_id=request.user_id,
+                command="/sql",
+                question=request.question,
+                sql_query=sql_query,
+                response=assistant_response,
+                ai_response=response.choices[0].message.content,
+                graph_code=None,
+                graph_url=None
+            )
+
+            return ChatResponse(
+                response=assistant_response,
+                sql_query=sql_query,
+                graph_url=None,
+                query_result=None,
+                error=None
+            )
+
+        except Exception as e:
+            logger.error(f"Error in get_sql_only: {str(e)}", exc_info=True)
+            raise 
+
+    async def process_ask_command(self, request: ChatRequest) -> ChatResponse:
+        """Process /ask command - returns only results without SQL query"""
+        try:
+            # Load chat history
+            history = self._load_history(request.user_id)
+            
+            # Prepare conversation context with specific instruction
+            messages = self._prepare_conversation_context(history, 
+                "Generate and execute SQL query for this question, return only the results: " + request.question)
+            
+            # Get AI response
+            response = await self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                temperature=0.7
+            )
+
+            assistant_response = response.choices[0].message.content
+            sql_query = self._extract_sql_query(assistant_response)
+            query_result = None
+            query_error = None
+
+            # Execute SQL query if present
+            if sql_query:
+                query_result, query_error = await self.sql_service.execute_query(sql_query)
+                
+                if query_error:
+                    return ChatResponse(
+                        response="Error executing query",
+                        sql_query=None,
+                        graph_url=None,
+                        query_result=None,
+                        error=query_error
+                    )
+
+            # Save to MySQL database instead of JSON
+            self._save_history(
+                user_id=request.user_id,
+                command="/ask",
+                question=request.question,
+                sql_query=sql_query,
+                response=assistant_response,
+                ai_response=assistant_response
+            )
+
+            return ChatResponse(
+                response=assistant_response,
+                sql_query=None,  # Don't send SQL query in response
+                graph_url=None,
+                query_result=query_result if query_result else None,
+                error=query_error
+            )
+
+        except Exception as e:
+            logger.error(f"Error in process_ask_command: {str(e)}", exc_info=True)
+            raise 
+
+    async def process_graph_command(self, request: ChatRequest, slack_client, mongodb_service, text, channel_id, user_id, initial_response) -> ChatResponse:
+        """Process /graph command - returns only results for graph"""
+        try:
+            history = self._load_history(request.user_id)
+            # Prepare conversation context with schema from JSON
+            messages = self._prepare_conversation_context(history, request.question)
+            
+            # Get AI response
+            response = await self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                temperature=0.7
+            )
+
+            assistant_response = response.choices[0].message.content
+            sql_query = self._extract_sql_query(assistant_response)
+            graph_code = self._extract_graph_code(assistant_response)
+            query_result = None
+            query_error = None
+            graph_url = None
+            
+            # Execute SQL query if present
+            if sql_query:
+                query_result, query_error = await self.sql_service.execute_query(sql_query)
+                
+                if query_error:
+                    assistant_response += f"\nError executing SQL: {query_error}"
+                    
+            if graph_code and query_result:
+                # Generate and save graph
+                img_buffer, local_path = self.generate_and_save_graph(
+                    graph_code, 
+                    query_result,
+                    user_id,
+                    text
+                )
+                
+                if img_buffer:
+                    # Upload graph
+                    send_graph(channel_id, img_buffer, text, slack_client)
+                    
+                    # Store in MongoDB
+                    image_url = mongodb_service.store_image(
+                        img_buffer.getvalue(),
+                        f"graph_{int(time.time())}.png",
+                        f"slack_{user_id}"
+                    )
+                    
+                    # Save history
+                    self._save_history(
+                        user_id=user_id,
+                        command="/graph",
+                        question=text,
+                        sql_query=sql_query,
+                        response=assistant_response,
+                        ai_response=assistant_response,
+                        graph_code=graph_code,
+                        graph_url=image_url
+                    )
+                    
+                    # Final update
+                    return slack_client.chat_update(
+                        channel=channel_id,
+                        ts=initial_response['ts'],
+                        text=f"{text}\n\nVisualization complete! ✨",
+                        blocks=[
+                            {
+                                "type": "section",
+                                "text": {
+                                    "type": "mrkdwn",
+                                    "text": text
+                                }
+                            },
+                            {
+                                "type": "section",
+                                "text": {
+                                    "type": "mrkdwn",
+                                    "text": "Visualization complete! ✨"
+                                }
+                            }
+                        ]
+                    )
+            
+            return ChatResponse(
+                response="Failed to generate graph",
+                sql_query=sql_query,
+                graph_url=None,
+                query_result=query_result,
+                error=query_error or "No graph code or query result available"
+            )
+
+        except Exception as e:
+            logger.error(f"Error in process_graph_command: {str(e)}")
+            raise
+
+    def generate_and_save_graph(self, graph_code: str, sql_result: dict, user_id: str, 
+                              question: str, conversation_id: str = None) -> tuple:
+        """Generate and save graph, return buffer and local path"""
+        try:
+            # Clear any existing plots
+            plt.clf()
+            plt.close('all')
+            
+            # Create new figure with specific size
+            plt.figure(figsize=(10, 6))
+            
+            # Create namespace with query results
+            local_namespace = {
+                'plt': plt,
+                'sql_result': sql_result
+            }
+            
+            # Execute graph code in the namespace
+            exec(graph_code, globals(), local_namespace)
+            
+            # Ensure proper rendering
+            plt.tight_layout()
+            
+            # Save to buffer
+            img_buffer = io.BytesIO()
+            plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
+            img_buffer.seek(0)
+            
+            # Save locally
+            timestamp = int(time.time())
+            local_path = f"static/images/graph_{timestamp}.png"
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            plt.savefig(local_path, dpi=300, bbox_inches='tight')
+            
+            # Store in MongoDB
+            graph_url = self.mongodb_service.store_image(
+                img_buffer.getvalue(),
+                f"graph_{timestamp}.png",
+                user_id
+            )
+            
+            # Save history
+            self._save_history(
+                user_id=user_id,
+                command="/graph",
+                question=question,
+                sql_query="",  # No SQL query for graph generation
+                response="Graph generated successfully",
+                ai_response="",  # No AI response for graph generation
+                conversation_id=conversation_id,
+                graph_code=graph_code,
+                graph_url=graph_url
+            )
+            
+            # Clean up
+            plt.close('all')
+            
+            return img_buffer, local_path
+            
+        except Exception as e:
+            logger.error(f"Error generating graph: {e}")
+            plt.close('all')
+            return None, None
+
+def send_graph(channel_id: str, img_buffer: bytes, text: str, slack_client):
+    """Upload graph to Slack"""
+    return slack_client.files_upload_v2(
+        channel=channel_id,
+        file=img_buffer,
+        filename="graph.png",
+        title=f"Visualization for: {text}",
+        initial_comment="Here's your visualization 📈"
+    )
