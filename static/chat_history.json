@@ -1,1 +1,32 @@
-{}
+[
+  {
+    "user_id": "slack_U07867XKY22",
+    "command": "/ask",
+    "question": "give data of movies released in countries and for top 10 only",
+    "sql_query": "SELECT\n    title,\n    country,\n    release_year\nFROM\n    netflix\nWHERE\n    type = 'Movie'\nORDER BY\n    release_year DESC\nLIMIT 10;",
+    "response": "Query executed successfully",
+    "ai_response": "```sql\nSELECT\n    title,\n    country,\n    release_year\nFROM\n    netflix\nWHERE\n    type = 'Movie'\nORDER BY\n    release_year DESC\nLIMIT 10;\n```",
+    "graph_url": null,
+    "timestamp": "2025-02-10T12:50:49.055334"
+  },
+  {
+    "user_id": "slack_U07867XKY22",
+    "command": "/ask",
+    "question": "give data of top 10 contries in number of movies released",
+    "sql_query": "SELECT\n    country,\n    COUNT(*) AS movie_count\nFROM\n    netflix\nWHERE\n    type = 'Movie'\nGROUP BY\n    country\nORDER BY\n    movie_count DESC\nLIMIT 10;",
+    "response": "Query executed successfully",
+    "ai_response": "```sql\nSELECT\n    country,\n    COUNT(*) AS movie_count\nFROM\n    netflix\nWHERE\n    type = 'Movie'\nGROUP BY\n    country\nORDER BY\n    movie_count DESC\nLIMIT 10;\n```",
+    "graph_url": null,
+    "timestamp": "2025-02-10T12:51:50.584379"
+  },
+  {
+    "user_id": "U07867XKY22",
+    "command": "/graph",
+    "question": "give me a graph of couintry vs number of movies released in netflix for these contries",
+    "sql_query": "SELECT\n    country,\n    COUNT(*) AS movie_count\nFROM\n    netflix\nWHERE\n    type = 'Movie'\nGROUP BY\n    country\nORDER BY\n    movie_count DESC\nLIMIT 10;",
+    "response": "Graph generated successfully",
+    "ai_response": "To visualize the number of movies released on Netflix by country for the top 10 countries, you'll first need to execute the SQL query to get the data and then use matplotlib to create a bar graph. Here's how you can do it:\n\n### SQL Query\nFirst, execute the following SQL query to retrieve the count of movies released in the top 10 countries:\n\n```sql\nSELECT\n    country,\n    COUNT(*) AS movie_count\nFROM\n    netflix\nWHERE\n    type = 'Movie'\nGROUP BY\n    country\nORDER BY\n    movie_count DESC\nLIMIT 10;\n```\n\n### Python Code for Visualization\nAssuming you have executed the SQL query and stored the results in a variable called `sql_result`, you can use the following Python code to create a bar graph:\n\n```python\nimport matplotlib.pyplot as plt\n\n# Sample sql_result data structure\nsql_result = {\n    'country': ['United States', 'India', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France', 'Japan', 'South Korea', 'Spain'],\n    'movie_count': [1500, 800, 600, 500, 450, 400, 350, 300, 250, 200]\n}\n\n# Extracting data\ncountries = sql_result['country']\nmovie_counts = sql_result['movie_count']\n\n# Creating the bar graph\nplt.figure(figsize=(10, 6))\nplt.barh(countries, movie_counts, color='skyblue')\nplt.xlabel('Number of Movies Released')\nplt.title('Top 10 Countries by Number of Movies Released on Netflix')\nplt.gca().invert_yaxis()  # Invert y-axis to have the country with the highest count on top\nplt.grid(axis='x', linestyle='--', alpha=0.7)\nplt.show()\n```\n\n### Explanation of the Code\n- The query counts the number of movies released by country and limits the result to the top 10.\n- The Python code uses `matplotlib` to create a horizontal bar chart that displays the country names on the y-axis and the corresponding number of movies on the x-axis.\n- The chart is styled with a clear title, axis labels, and a grid for better readability. The y-axis is inverted to show the country with the highest count at the top.",
+    "graph_url": "/api/images/67a9f6daaeea8549ee2beb0b",
+    "timestamp": "2025-02-10T12:53:47.344172"
+  }
+]

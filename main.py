@@ -1,14 +1,28 @@
 # main.py
-import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from api import slack_router, ui_router
-from services.mongodb_service import MongoDBService
+from api import slack_router
+from api.slack_router import MongoDBService, settings
 from bson.objectid import ObjectId
 import matplotlib
-matplotlib.use("Agg")  # Use non-GUI backend to prevent local display
+import logging
+
+# Configure logging
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("pymongo").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("uvicorn").setLevel(logging.WARNING)
+logging.getLogger("fastapi").setLevel(logging.WARNING)
+
+# Set basic logging configuration
+logging.basicConfig(
+    level=logging.WARNING,
+    format='%(levelname)s: %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+
+matplotlib.use("Agg")
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -16,17 +30,10 @@ app = FastAPI()
 # Mount the static directory
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Initialize templates
-templates = Jinja2Templates(directory="templates")
-
 # Initialize MongoDB service
 mongodb_service = MongoDBService()
 
-# Initialize UI router with templates
-ui_router.init_router(templates)
-
 # Include routers
-app.include_router(ui_router.router)
 app.include_router(slack_router.router, prefix="/slack")
 
 # Image serving endpoint
