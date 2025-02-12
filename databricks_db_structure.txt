@@ -1,0 +1,2 @@
+Table: analytics.super.raw_listening_impression_combined_show_level
+Columns:
