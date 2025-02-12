@@ -2,26 +2,14 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
-from api import slack_router
-from api.slack_router import MongoDBService, settings
 from bson.objectid import ObjectId
 import matplotlib
-import logging
 
-# Configure logging
-logging.getLogger("matplotlib").setLevel(logging.WARNING)
-logging.getLogger("pymongo").setLevel(logging.WARNING)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
-logging.getLogger("uvicorn").setLevel(logging.WARNING)
-logging.getLogger("fastapi").setLevel(logging.WARNING)
+from api.config import settings, logger
+from api.services.mongodb_service import mongodb_service
+from api.routes import router as api_router
 
-# Set basic logging configuration
-logging.basicConfig(
-    level=logging.WARNING,
-    format='%(levelname)s: %(message)s',
-    handlers=[logging.StreamHandler()]
-)
-
+# Use non-interactive backend for matplotlib
 matplotlib.use("Agg")
 
 # Initialize FastAPI app
@@ -30,11 +18,8 @@ app = FastAPI()
 # Mount the static directory
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Initialize MongoDB service
-mongodb_service = MongoDBService()
-
 # Include routers
-app.include_router(slack_router.router, prefix="/slack")
+app.include_router(api_router, prefix="/slack")
 
 # Image serving endpoint
 @app.get("/api/images/{image_id}")
@@ -46,6 +31,7 @@ async def get_image(image_id: str):
             return Response(content=image_data, media_type=content_type)
         raise HTTPException(status_code=404, detail="Image not found")
     except Exception as e:
+        logger.error(f"Error serving image: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

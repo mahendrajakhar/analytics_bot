@@ -3,3 +3,5 @@
 venv/
 static/images/*
 all_code.txt
+.idea
+.ropeproject

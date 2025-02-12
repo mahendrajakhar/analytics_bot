@@ -150,3 +150,11 @@ Keep the ngrok terminal open while testing.
 If you want to keep the same URL every time:
 only for paid users
 ngrok http --region=us --subdomain=customname 8000```
+
+
+
+
+
+
+
+clear && uvicorn main:app --host 0.0.0.0 --port 8000 --reload

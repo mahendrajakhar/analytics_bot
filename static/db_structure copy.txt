@@ -1,0 +1,150 @@
+Complete Database Context with Unique Values
+Spotify Table
+Column Information and Unique Values:
+
+id: 6,187 unique values
+name: 4,356 unique values
+genre: 126 unique values
+artists: 4,649 unique values
+album: 4,878 unique values
+popularity: 90 unique values
+duration_ms: 5,566 unique values
+explicit:
+Copy[0, 1]
+
+
+Netflix Table
+Column Information and Unique Values:
+
+show_id: 8,790 unique values
+type:
+Copy["Movie", "TV Show"]
+
+title: 8,780 unique values
+director: 4,525 unique values
+country: 86 unique values
+date_added: 1,713 unique values
+release_year: 74 unique values
+rating:
+Copy["G", "NC-17", "NR", "PG", "PG-13", "R", "TV-14", "TV-G", "TV-MA", "TV-PG", "TV-Y", "TV-Y7", "TV-Y7-FV", "UR"]
+
+duration: 220 unique values
+listed_in: 513 unique values
+
+NBA Games Table
+Column Information and Unique Values:
+
+gameId: 71,289 unique values
+gameDate: 33,585 unique values
+hometeamCity:
+Copy["Atlanta", "Baltimore", "Boston", "Brooklyn", "Buffalo", "Capital", "Charlotte", "Chicago", "Cincinnati", 
+ "Cleveland", "Dallas", "Denver", "Detroit", "Ft. Wayne Zollner", "Golden State", "Houston", "Indiana", 
+ "Kansas City", "Kansas City-Omaha", "Los Angeles", "Memphis", "Miami", "Milwaukee", "Minneapolis", 
+ "Minnesota", "New Jersey", "New Orleans", "New York", "Oklahoma City", "Orlando", "Philadelphia", 
+ "Phoenix", "Portland", "Rochester", "Sacramento", "San Antonio", "San Diego", "San Francisco", 
+ "Seattle", "St. Louis", "Syracuse", "Toronto", "Tri-Cities", "Utah", "Vancouver", "Washington"]
+
+hometeamName:
+Copy["76ers", "Blackhawks", "Bobcats", "Braves", "Bucks", "Bullets", "Bulls", "Cavaliers", "Celtics", 
+ "Clippers", "Grizzlies", "Hawks", "Heat", "Hornets", "Jazz", "Kings", "Knicks", "Lakers", "Magic", 
+ "Mavericks", "Nationals", "Nets", "Nuggets", "Pacers", "Packers", "Pelicans", "Pistons", "Raptors", 
+ "Rockets", "Royals", "Spurs", "Suns", "SuperSonics", "Thunder", "Timberwolves", "Trail Blazers", 
+ "Warriors", "Wizards", "Zephyrs"]
+
+hometeamId:
+Copy[1610612737, 1610612738, 1610612739, 1610612740, 1610612741, 1610612742, 1610612743, 1610612744, 
+ 1610612745, 1610612746, 1610612747, 1610612748, 1610612749, 1610612750, 1610612751, 1610612752, 
+ 1610612753, 1610612754, 1610612755, 1610612756, 1610612757, 1610612758, 1610612759, 1610612760, 
+ 1610612761, 1610612762, 1610612763, 1610612764, 1610612765, 1610612766]
+
+awayteamCity: Same as hometeamCity
+awayteamName: Same as hometeamName
+awayteamId: Same as hometeamId
+homeScore: 124 unique values
+awayScore: 124 unique values
+winner: Same as team IDs
+gameType:
+Copy["NBA Cup", "NBA Emirates Cup", "Play-in Tournament", "Playoffs", "Preseason", "Regular Season"]
+
+attendance: 17,310 unique values
+arenaId: 265 unique values
+gameLabel:
+Copy[null, "East - ", "East - Conf. Finals", "East - Conf. Semifinals", "East - First Round", 
+ "East Play-In", "Emirates NBA Cup", "In-Season Tournament", "NBA Finals", "NBA Mexico City Game", 
+ "NBA Paris Game", "NBA Paris Games", "Preseason", "West - ", "West - Conf. Finals", 
+ "West - Conf. Semifinals", "West - First Round", "West Play-In"]
+
+gameSubLabel:
+Copy[null, "Championship", "East Group A", "East Group B", "East Group C", "East Quarterfinal", 
+ "East Semifinal", "NBA Montreal Game", "West Group A", "West Group B", "West Group C", 
+ "West Quarterfinal", "West Semifinal"]
+
+seriesGameNumber:
+Copy[null, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
+
+
+Olympics Athletes Table
+Column Information and Unique Values:
+
+ID: 135,571 unique values
+Name: 134,731 unique values
+Sex:
+Copy["F", "M"]
+
+Age: 74 unique values
+Height: 95 unique values
+Weight: 220 unique values
+Team: 1,184 unique values
+NOC: 230 unique values
+Games: 51 unique values
+Year:
+Copy[1896, 1900, 1904, 1906, 1908, 1912, 1920, 1924, 1928, 1932, 1936, 1948, 1952, 1956, 1960, 
+ 1964, 1968, 1972, 1976, 1980, 1984, 1988, 1992, 1994, 1996, 1998, 2000, 2002, 2004, 2006, 
+ 2008, 2010, 2012, 2014, 2016]
+
+Season:
+Copy["Summer", "Winter"]
+
+City:
+Copy["Albertville", "Amsterdam", "Antwerpen", "Athina", "Atlanta", "Barcelona", "Beijing", "Berlin", 
+ "Calgary", "Chamonix", "Cortina d'Ampezzo", "Garmisch-Partenkirchen", "Grenoble", "Helsinki", 
+ "Innsbruck", "Lake Placid", "Lillehammer", "London", "Los Angeles", "Melbourne", "Mexico City", 
+ "Montreal", "Moskva", "Munich", "Nagano", "Oslo", "Paris", "Rio de Janeiro", "Roma", 
+ "Salt Lake City", "Sankt Moritz", "Sapporo", "Sarajevo", "Seoul", "Sochi", "Squaw Valley", 
+ "St. Louis", "Stockholm", "Sydney", "Tokyo", "Torino", "Vancouver"]
+
+Sport: 66 unique values
+Event: 765 unique values
+Medal:
+Copy[null, "Bronze", "Gold", "Silver"]
+
+
+Important Relationships and Notes:
+
+NBA Games Table:
+
+Team IDs (hometeamId, awayteamId, winner) all use the same set of values
+All team IDs have prefix "1610612"
+
+
+Olympics Athletes Table:
+
+Medal column contains null for non-medalists
+Same athlete ID can appear multiple times for different events
+City and Year combinations match with Games column
+
+
+Netflix Table:
+
+Duration format differs by type:
+
+Movies: "X min"
+TV Shows: "X Season(s)"
+
+
+
+
+Spotify Table:
+
+Explicit is a binary flag (0 or 1)
+Popularity ranges from 0 to 90
