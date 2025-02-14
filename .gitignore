@@ -5,3 +5,7 @@ static/images/*
 all_code.txt
 .idea
 .ropeproject
+faiss_index
+chat_history
+images
+chat_history.db

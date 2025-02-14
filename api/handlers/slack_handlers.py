@@ -1,7 +1,6 @@
 import logging
-from fastapi import Request, HTTPException, Depends
-from sqlalchemy.orm import Session
-from api.config import get_db, settings, logger
+from fastapi import Request, HTTPException
+from api.config import settings, logger  # Remove get_db import
 from api.services.slack_chat_service import SlackChatService
 from api.services.sql_service import SQLService
 from api.services.mongodb_service import mongodb_service
@@ -16,7 +15,7 @@ COMMAND_SQL = "/sql"
 COMMAND_ASK = "/ask"
 COMMAND_GRAPH = "/graph"
 
-async def slack_command(request: Request, db: Session, response_url: str):
+async def slack_command(request: Request, response_url: str):
     """Handle Slack slash commands"""
     try:
         form_data = await request.form()
@@ -35,8 +34,8 @@ async def slack_command(request: Request, db: Session, response_url: str):
             "Processing your request... 🔄"
         )
         
-        sql_service = SQLService(db)
-        chat_service = SlackChatService(db, sql_service, mongodb_service)
+        sql_service = SQLService()  # Remove db dependency
+        chat_service = SlackChatService(sql_service, mongodb_service)
         
         if command == COMMAND_HELP or not text:
             help_text = get_help_text()

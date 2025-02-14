@@ -1,67 +1,392 @@
-# Database Schema (from SQL)
+Table: analytics.super.biz_logic_costs
+Columns: [date_tz, adn_cost, impressions, clicks, adn_campaign_name, adn_campaign_id, adn_sub_campaign_name, adn_sub_campaign_id, adn_creative_name, adn_creative_id, campaign_show_id, campaign_show_name, purpose, source, language, category, channel, biz_type, campaign_country, type, platform_type, subscription_model, old_cost_source, cost_source, marketing_source]
+smaple schema: {
+        "date_tz": "2024-03-09",
+        "adn_cost": 54109.3409,
+        "impressions": 1181995.0,
+        "clicks": 22563.0,
+        "adn_campaign_name": "GG|ACe|Hindi|RM||app|AR||||Subs|IN|Remarketing|BAU|payment_success",
+        "adn_campaign_id": "14798655819",
+        "adn_sub_campaign_name": "Hindi_subs_view_not-purchased_30day",
+        "adn_sub_campaign_id": "136156519894",
+        "adn_creative_name": null,
+        "adn_creative_id": null,
+        "campaign_show_id": null,
+        "campaign_show_name": null,
+        "purpose": "remarketing",
+        "source": "AdWords",
+        "language": "hindi",
+        "category": "non-fiction",
+        "channel": "google",
+        "biz_type": "India",
+        "campaign_country": "India",
+        "type": "BAU",
+        "platform_type": "KukuFM Android App",
+        "subscription_model": "Subs",
+        "old_cost_source": "hindi-Remarketing",
+        "cost_source": "Hindi-Remarketing",
+        "marketing_source": "Google - Remarketing"
+      }
 
-Table: chat_history
-  - id (INTEGER)
-  - user_id (VARCHAR(255))
-  - question (TEXT)
-  - sql_query (TEXT)
-  - response (TEXT)
-  - timestamp (DATETIME)
+Table: analytics.super.biz_logic_v2
+Columns: [sdate_tz, platform_type, stream_id, longname, app_installation_rank, final_profile_id, first_order_date, purchase_dfs, first_trial_date, first_coin_date, first_paid_coin_spent_date, first_promo_date, attribution, network, campaign, campaign_name, campaign_id, sub_campaign_name, sub_campaign_id, creative_name, creative_id, contributor_1_touch_type, contributor_1_campaign, contributor_2_touch_type, contributor_2_campaign, campaign_lang, campaign_show_id, campaign_show_name, campaign_cluster, primary_lang, onboarding_lang, lang_combo, channel, purpose, type, category, biz_type, platform, subscription_model, purchase_show_id, purchase_show_name, plan_id, plan_type, amount, coupon_code_id, subscription_status, cancellation_dfs, version, city, country, app_install_store, request_source, gift_referral, revenue, first_coin_amount, campaign_country, user_monetization_type, coin_campaign_cohort_flag, marketing_source, liftime_subs_revenue, lifetime_coin_revenue]
+sample schema: {
+        "sdate_tz": "2025-01-27",
+        "platform_type": "Overall-FM",
+        "stream_id": 9880357729,
+        "longname": "com.vlv.aravali.lovenasha",
+        "app_installation_rank": 101,
+        "final_profile_id": 93635520,
+        "first_order_date": null,
+        "purchase_dfs": null,
+        "first_trial_date": null,
+        "first_coin_date": null,
+        "first_paid_coin_spent_date": null,
+        "first_promo_date": null,
+        "attribution": "Overall-FM",
+        "network": "googleadwords_int",
+        "campaign": "GG|UAC|Hindi|PR||app|AR|No_Caps|||Subs|IN|Performance|BAU|trial_s2s|Kuku_LN|Jan 15",
+        "campaign_name": "GG|UAC|Hindi|PR||app|AR|No_Caps|||Subs|IN|Performance|BAU|trial_s2s|Kuku_LN|Jan 15",
+        "campaign_id": "22132252459",
+        "sub_campaign_name": "Brand_Ads",
+        "sub_campaign_id": "175115016884",
+        "creative_name": null,
+        "creative_id": null,
+        "contributor_1_touch_type": null,
+        "contributor_1_campaign": null,
+        "contributor_2_touch_type": null,
+        "contributor_2_campaign": null,
+        "campaign_lang": "hindi",
+        "campaign_show_id": null,
+        "campaign_show_name": null,
+        "campaign_cluster": null,
+        "primary_lang": "hindi",
+        "onboarding_lang": "hindi",
+        "lang_combo": "hindi",
+        "channel": "google",
+        "purpose": "performance",
+        "type": "BAU",
+        "category": "non-fiction",
+        "biz_type": "India",
+        "platform": "Android",
+        "subscription_model": "Subs",
+        "purchase_show_id": null,
+        "purchase_show_name": null,
+        "plan_id": null,
+        "plan_type": "Annual_subs",
+        "amount": null,
+        "coupon_code_id": null,
+        "subscription_status": null,
+        "cancellation_dfs": null,
+        "version": "4.8.4",
+        "city": "Meerut",
+        "country": "India",
+        "app_install_store": "Google Playstore",
+        "request_source": null,
+        "gift_referral": null,
+        "revenue": null,
+        "first_coin_amount": null,
+        "campaign_country": "India",
+        "user_monetization_type": "Free Pure",
+        "coin_campaign_cohort_flag": false,
+        "marketing_source": "Google - New User",
+        "liftime_subs_revenue": null,
+        "lifetime_coin_revenue": null
+      }
 
-Table: nba_games
-  - gameId (BIGINT)
-  - gameDate (TEXT)
-  - hometeamCity (TEXT)
-  - hometeamName (TEXT)
-  - hometeamId (BIGINT)
-  - awayteamCity (TEXT)
-  - awayteamName (TEXT)
-  - awayteamId (BIGINT)
-  - homeScore (BIGINT)
-  - awayScore (BIGINT)
-  - winner (BIGINT)
-  - gameType (TEXT)
-  - attendance (DOUBLE)
-  - arenaId (BIGINT)
-  - gameLabel (TEXT)
-  - gameSubLabel (TEXT)
-  - seriesGameNumber (DOUBLE)
 
-Table: netflix
-  - show_id (TEXT)
-  - type (TEXT)
-  - title (TEXT)
-  - director (TEXT)
-  - country (TEXT)
-  - date_added (TEXT)
-  - release_year (BIGINT)
-  - rating (TEXT)
-  - duration (TEXT)
-  - listed_in (TEXT)
+Table: analytics.super.free_trial_orders
+Columns: [order_tz, created_on_utc, order_id, currency, final_profile_id, primary_lang, language, source, country, spend_campaign_name, sing_network, plan_id, plan_flag, coupon_code_id, validity, revenue, plan_start_date, plan_end_date, is_subscription, subscription_id, subscription_status, subscription_platform, cancellation_reason, mandate_amount, mandate_created_on_tz, mandate_end_date_tz, mandate_end_time_utc, payment_gateway, payment_method, request_source, first_order_tz, trial_user, first_trial_date, subs_type, gift_referral, platform_type, pre_platform_type, package_name, final_pg, associated_final_profile_id, row_num, row_num_subs, prev_order_tz, prev_plan_id, prev_plan_flag, prev_plan_start_date, prev_plan_end_date, trial_order, continuing_flag, day_diff_plan_start, plan_update_flag, new_sub, renew_sub, re_active_flag]
+sample schema:{
+        "order_tz": "2025-01-04",
+        "created_on_utc": "2025-01-03 19:42:46.609000",
+        "order_id": 136036874,
+        "currency": "INR",
+        "final_profile_id": 143778,
+        "primary_lang": "hindi",
+        "language": "hindi",
+        "source": "Facebook - New User",
+        "country": "India",
+        "spend_campaign_name": "FB|ABO|Hindi|PR||app|AR||||Subs|IN|Performance|BAU|trial_s2s|KF_Udaan|Nov 19",
+        "sing_network": "Facebook Ads",
+        "plan_id": 33,
+        "plan_flag": "Quarterly",
+        "coupon_code_id": null,
+        "validity": 90,
+        "revenue": 0.0,
+        "plan_start_date": "2025-01-04",
+        "plan_end_date": "2025-01-11",
+        "is_subscription": true,
+        "subscription_id": 50641782,
+        "subscription_status": "active",
+        "subscription_platform": "juspay",
+        "cancellation_reason": null,
+        "mandate_amount": "299.0",
+        "mandate_created_on_tz": "2025-01-04",
+        "mandate_end_date_tz": null,
+        "mandate_end_time_utc": null,
+        "payment_gateway": "juspay",
+        "payment_method": "Others",
+        "request_source": "app",
+        "first_order_tz": "2025-01-04",
+        "trial_user": 1,
+        "first_trial_date": "2025-01-04",
+        "subs_type": "B2C",
+        "gift_referral": null,
+        "platform_type": "KukuFM Android Udaan App",
+        "pre_platform_type": "KukuFM Android Udaan App",
+        "package_name": "com.vlv.aravali.udaanHindi",
+        "final_pg": "phonepe",
+        "associated_final_profile_id": null,
+        "row_num": 1,
+        "row_num_subs": 1,
+        "prev_order_tz": null,
+        "prev_plan_id": null,
+        "prev_plan_flag": null,
+        "prev_plan_start_date": null,
+        "prev_plan_end_date": null,
+        "trial_order": 1,
+        "continuing_flag": 1,
+        "day_diff_plan_start": null,
+        "plan_update_flag": "Quarterly",
+        "new_sub": 1,
+        "renew_sub": 0,
+        "re_active_flag": 0
+      }
 
-Table: olympics_athletes
-  - ID (BIGINT)
-  - Name (TEXT)
-  - Sex (TEXT)
-  - Age (DOUBLE)
-  - Height (DOUBLE)
-  - Weight (DOUBLE)
-  - Team (TEXT)
-  - NOC (TEXT)
-  - Games (TEXT)
-  - Year (BIGINT)
-  - Season (TEXT)
-  - City (TEXT)
-  - Sport (TEXT)
-  - Event (TEXT)
-  - Medal (TEXT)
 
-Table: spotify
-  - id (TEXT)
-  - name (TEXT)
-  - genre (TEXT)
-  - artists (TEXT)
-  - album (TEXT)
-  - popularity (BIGINT)
-  - duration_ms (BIGINT)
-  - explicit (TINYINT)
+Table: analytics.super.raw_listening_impression_combined_show_level
+Columns: [date_tz, final_profile_id, show_id, activity_platform, mins_listened, episode_1_listener, episode_1_completed, impressions, clicks, show_viewed]
+sample schema:{
+        "date_tz": "2024-01-01 00:00:00.000000",
+        "final_profile_id": 111089,
+        "show_id": 181650,
+        "activity_platform": "KukuFM Android App",
+        "mins_listened": null,
+        "episode_1_listener": null,
+        "episode_1_completed": null,
+        "impressions": 1,
+        "clicks": 0,
+        "show_viewed": null
+      }
+
+
+Table: analytics.super.premium_user_all_orders
+Columns: [order_tz, created_on_utc, updated_on_utc, order_id, currency, final_profile_id, primary_lang, language, source, channel, country, spend_campaign_name, sing_network, plan_id, plan_flag, coupon_code_id, validity, revenue, forex_amount, plan_start_date, plan_end_date, is_subscription, subscription_id, subscription_status, subscription_platform, cancellation_reason, mandate_amount, mandate_created_on_tz, mandate_end_date_tz, payment_gateway, payment_method, request_source, first_order_tz, trial_user, first_trial_date, subs_type, gift_referral, associated_final_profile_id, row_num, row_num_subs, prev_order_tz, prev_plan_id, prev_plan_flag, prev_plan_start_date, prev_plan_end_date, trial_order, platform_type, pre_platform_type, package_name, final_pg, pg_transaction_id, invoice_link, invoice_down_link, place_of_supply, invoice_tax_intl, invoice_tax_igst, invoice_tax_cgst, invoice_tax_sgst, invoice_no, pg_charges, pg_gst, settlement_date, adjustment_id, refund_id, deal_partner, day_diff_plan_start, plan_update_flag, new_sub, renew_sub, continuing_flag, re_active_flag]
+sample schema:{
+        "order_tz": "2021-07-10",
+        "created_on_utc": "2021-07-10 06:22:23.728000",
+        "updated_on_utc": "2021-07-10 06:24:09.770000",
+        "order_id": 241602,
+        "currency": null,
+        "final_profile_id": 7340,
+        "primary_lang": "hindi",
+        "language": "hindi",
+        "source": "Facebook - New User",
+        "channel": "facebook",
+        "country": "India",
+        "spend_campaign_name": "Experimentation - Monetisation",
+        "sing_network": "Facebook",
+        "plan_id": 1,
+        "plan_flag": "Annual",
+        "coupon_code_id": "WPD25",
+        "validity": 365,
+        "revenue": 299.0,
+        "forex_amount": 0.0,
+        "plan_start_date": "2021-07-10",
+        "plan_end_date": "2022-07-10",
+        "is_subscription": false,
+        "subscription_id": null,
+        "subscription_status": null,
+        "subscription_platform": null,
+        "cancellation_reason": null,
+        "mandate_amount": null,
+        "mandate_created_on_tz": null,
+        "mandate_end_date_tz": null,
+        "payment_gateway": "razorpay",
+        "payment_method": "UPI",
+        "request_source": "app",
+        "first_order_tz": "2021-07-10",
+        "trial_user": 0,
+        "first_trial_date": null,
+        "subs_type": "B2C",
+        "gift_referral": null,
+        "associated_final_profile_id": null,
+        "row_num": 1,
+        "row_num_subs": 1,
+        "prev_order_tz": null,
+        "prev_plan_id": null,
+        "prev_plan_flag": null,
+        "prev_plan_start_date": null,
+        "prev_plan_end_date": null,
+        "trial_order": 0,
+        "platform_type": "KukuFM Android App",
+        "pre_platform_type": "KukuFM Android App",
+        "package_name": null,
+        "final_pg": "razorpay",
+        "pg_transaction_id": "pay_HX7y5nlRm5ElIK",
+        "invoice_link": "https://s3.ap-south-1.amazonaws.com/kukufm/invoice/Jul21/4876010_1625898250.241553.pdf",
+        "invoice_down_link": "https://kukufm.com/download-invoice/Jul21/4876010_1625898250.241553.pdf",
+        "place_of_supply": null,
+        "invoice_tax_intl": null,
+        "invoice_tax_igst": null,
+        "invoice_tax_cgst": null,
+        "invoice_tax_sgst": null,
+        "invoice_no": null,
+        "pg_charges": null,
+        "pg_gst": null,
+        "settlement_date": null,
+        "adjustment_id": null,
+        "refund_id": null,
+        "deal_partner": null,
+        "day_diff_plan_start": null,
+        "plan_update_flag": "Annual",
+        "new_sub": 1,
+        "renew_sub": 0,
+        "continuing_flag": 0,
+        "re_active_flag": 0
+      }
+
+
+Table: analytics.super.master_product_funnel_base
+Columns: [date_tz, final_profile_id, dfs_signup, dfs_platform_signup, mod_ten_user, mod_twenty_user, stream_id, platform_type, age_bracket, gender, education]
+sample schema:{
+        "date_tz": "2025-01-27",
+        "final_profile_id": 570873,
+        "dfs_signup": 2013,
+        "dfs_platform_signup": 2013,
+        "mod_ten_user": 3,
+        "mod_twenty_user": 13,
+        "stream_id": "9837289850",
+        "platform_type": "KukuGuru Android Tamil App",
+        "age_bracket": null,
+        "gender": null,
+        "education": null,
+        "city": null,
+        "tier": null,
+        "first_install_language": "tamil",
+        "first_install_country": "India",
+        "first_install_channel": "Organic",
+        "first_install_campaign_name": null,
+        "first_install_sub_campaign_name": null,
+        "first_install_campaign_show_id": null,
+        "platform_install_language": "tamil",
+        "platform_install_country": "India",
+        "platform_install_channel": "Organic",
+        "platform_install_campaign_name": null,
+        "platform_install_sub_campaign_name": null,
+        "platform_install_campaign_show_id": null,
+        "version": "5.1.2",
+        "app_open": 1,
+        "splash_screen_viewed": 1,
+        "splash_screen_exited": 1,
+        "main_activity_on_create": 1,
+        "update_popup_viewed": 0,
+        "update_popup_clicked": 0,
+        "update_downloaded": 0,
+        "update_installed": 0,
+        "cmp_link_on_splash_screen": 0,
+        "cmp_link_on_login_screen": 0,
+        "home_screen_started": 1,
+        "home_screen_viewed": 1,
+        "upi_users": 1,
+        "language_screen_viewed": 0,
+        "campaign_language_autoset": 0,
+        "language_submit_successful": 0,
+        "language_submit_proxy": 0,
+        "post_onboard_lang_changed": 0,
+        "fb_applink_processed": 1,
+        "gads_ddl_processed": 0,
+        "discount_ribbon_viewed": 1,
+        "discount_ribbon_clicked": 0,
+        "bottom_player_clicked": 0,
+        "bottom_player_dismissed": 0,
+        "locked_episode_clicked": 0,
+        "free_trial_page_viewed": 1,
+        "free_trial_guilt_popup_viewed": 1,
+        "cd_nudge_popup_viewed": 0,
+        "free_trial_home": 0,
+        "free_trial_subscription_deeplink": 0,
+        "free_trial_bottom_nav": 0,
+        "free_trial_show_screen": 0,
+        "free_trial_coin_premium": 0,
+        "free_trial_paywall": 0,
+        "free_trial_banner": 0,
+        "free_trial_cu_info_screen": 0,
+        "free_trial_others_screen": 0,
+        "free_trial_clicked_home": 0,
+        "free_trial_subscription_clickd_deeplink": 0,
+        "free_trial_bottom_nav_clicked": 0,
+        "free_trial_show_screen_clicked": 0,
+        "free_trial_coin_premium_clicked": 0,
+        "free_trial_paywall_clicked": 0,
+        "free_trial_banner_clicked": 0,
+        "free_trial_cu_info_screen_clicked": 0,
+        "free_trial_others_screen_clickded": 0,
+        "free_trial_pay_success_home": 0,
+        "free_trial_subscription_payment_success_deeplink": 0,
+        "free_trial_bottom_nav_payment_success": 0,
+        "free_trial_show_screen_payment_success": 0,
+        "free_trial_coin_premium_payment_success": 0,
+        "free_trial_paywall_payment_success": 0,
+        "free_trial_banner_payment_success": 0,
+        "free_trial_cu_info_screen_payment_successd": 0,
+        "free_trial_others_screen_payment_success": 0,
+        "coin_locked_ep_dialogue_viewed": 0,
+        "coin_locked_ep_dialogue_proceed": 0,
+        "coin_free_episode_audio_cue_played": 0,
+        "coin_low_wallet_balance_audio_played": 0,
+        "coin_low_wallet_balance_paywall_viewed": 0,
+        "coin_credited_audio_que": 0,
+        "coin_free_received_popup_viewed": 0,
+        "coin_paywall_purchase_clicked": 0,
+        "coin_episode_unlocked_with_coins": 0,
+        "coin_store_viewed": 0,
+        "coin_payment_screen_viewed": 0,
+        "coin_payment_initiated": 0,
+        "coin_payment_success": 0,
+        "coin_payment_failed": 0,
+        "notification_received": 0,
+        "notification_opened": 0,
+        "deeplink_processing": 0,
+        "free_trail_start_cta_clicked": 1,
+        "seek_position": 0,
+        "item_viewed": 1,
+        "item_clicked": 0,
+        "show_viewed": 0,
+        "episode_play_started": 0,
+        "autoplay_flag": 0,
+        "player_screen_viewed": 0,
+        "player_collapsed": 0,
+        "player_paywall_viewed": 0,
+        "ten_seconds_media_played": 0,
+        "minute_media_played": 0,
+        "subs_screen_viewed": 0,
+        "coupon_code_applied": 0,
+        "coupon_apply_failed": 0,
+        "pay_now_button_viewed": 0,
+        "pay_now_button_clicked": 0,
+        "subscription_screen_pay_clicked": 0,
+        "payment_screen_viewed": 0,
+        "payment_initiated": 1,
+        "payment_success": 0,
+        "payment_initiated_juspay": 1,
+        "payment_initiated_razorpay": 0,
+        "payment_initiated_gplay": 0,
+        "payment_initiated_ios": 0,
+        "payment_initiated_phonepe": 0,
+        "payment_success_juspay": 0,
+        "payment_success_razorpay": 0,
+        "payment_success_gplay": 0,
+        "payment_success_ios": 0,
+        "payment_success_phonepe": 0,
+        "payment_failed": 0,
+        "uninstall_user": 0,
+        "app_killed": 0,
+        "app_terminated_background": 1,
+        "free_trial_page_video_playing": 0,
+        "free_trial_quick_pay_enabled": 0,
+        "mob_brand": "Vivo",
+        "mob_model": "V2111",
+        "mob_category": "Mid Expensive"
+      }

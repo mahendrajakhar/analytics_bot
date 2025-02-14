@@ -1,0 +1,68 @@
+Table: analytics.super.master_product_funnel_base
+Description: Tracks user activity through a product funnel.
+Possible Primary Key: A combination of date_tz and final_profile_id is likely, though additional activity identifiers might be needed. Surrogate key named 'id'
+primary key: id
+
+Foreign Keys (Potential/Inferred):
+final_profile_id -> users.id
+stream_id -> streams.stream_id
+
+Relationships:
+One-to-many with users.
+One-to-many with inferred streams.
+
+Implicit/Joinable Fields:
+date_tz: Date for time-series analysis.
+platform_type: Platform dimension.
+age_bracket, gender, education: User demographics.
+
+Inferred Tables (Based on Foreign Keys):
+users: ( id, ...other user attributes...) - Referenced extensively by final_profile_id.
+ad_campaigns: (campaign_id, ...campaign details...)
+ad_sub_campaigns: (sub_campaign_id, ...sub-campaign details...)
+ad_creatives: (creative_id, ...creative details...)
+shows: (show_id, show_name ...show details...)
+plans: (plan_id, ...plan details...)
+coupons: ( coupon_code_id, ...coupon details...)
+subscriptions: (subscription_id, ...subscription details...)
+streams:(stream_id,..stream details...)
+
+
+
+
+Table: analytics.super.master_product_funnel_base
+Description: Contains data for tracking user activity through a product funnel, including app opens, signups, and various user actions.
+Columns:
+date_tz (DATE) - Date of the record.
+Example: "2025-01-27"
+Unique Values: 165
+final_profile_id (LONG) - ID of the user profile.
+Example: 570873
+Unique Values: 41,838,825
+dfs_signup (INT) - Days from signup.
+Example: 2013
+Unique Values: 2,514
+dfs_platform_signup (INT) - Days from platform signup.
+Example: 2013
+Unique Values: 2,511
+mod_ten_user (LONG) - Flag indicating if the user is a mod ten user.
+Example: 3
+Unique Values: 10, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+mod_twenty_user (LONG) - Flag indicating if the user is a mod twenty user.
+Example: 13
+Unique Values: 20, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+stream_id (STRING) - ID of the stream.
+Example: "9837289850"
+Unique Values: 16, ["1896756955", "2275693602", "4666966160", "9665578205", "9683080031", "9683149066", "9837289850", "9859223044", "9869340780", "9880142235", "9880270805", "9880322452", "9880357729", "9908888782", "9931188000", "9942422035"]
+platform_type (STRING) - Type of platform.
+Example: "KukuGuru Android Tamil App"
+Unique Values: 16, ["KukuFM Android App", "KukuFM Android Bhakti App", "KukuFM Android Kannada App", "KukuFM Android Love App", "KukuFM Android Tamil App", "KukuFM Android Telugu App", "KukuFM Android Udaan App", "KukuFM IOS App", "KukuFM Manifest XM App", "KukuFM USA Android App", "KukuGuru Android Hindi App", "KukuGuru Android Tamil App", "KukuTV Android App", "KukuTV Android Telugu App", "KukuTV IOS App", "KukuTV US Android App"]
+age_bracket (STRING) - Age bracket of the user.
+Example: null
+Unique Values: 10, ["15-25", "18-23", "18-24", "25-34", "25-35", "35-44", "35-55", "45-54", "55-64", "65+"]
+gender (STRING) - Gender of the user.
+Example: null
+Unique Values: 7, ["Don't Want To Disclose", "Don't Want to Disclose", "Female", "He", "Male", "Other", "She"]
+education (STRING) - Education level of the user.
+Example: null
+Unique Values

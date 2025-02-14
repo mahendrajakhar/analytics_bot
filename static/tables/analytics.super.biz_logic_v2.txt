@@ -1,0 +1,238 @@
+Table: analytics.super.biz_logic_v2
+Description: Contains user activity data, including platform, stream, user details, and campaign information.
+
+Possible Primary Key: Again, no single unique column. A composite key could be formed from sdate_tz, final_profile_id, stream_id, and potentially campaign_id and sub_campaign_id or other activity identifiers. A surrogate key named 'id' is the best choice.
+Primary key: id
+
+Foreign Keys (Potential/Inferred):
+final_profile_id -> (Relates to a users or profiles table. We will assume users). user.id
+stream_id -> (Likely relates to a streams table). stream.id
+campaign_id -> (Relates to an ad_campaigns table, similar to biz_logic_costs).
+sub_campaign_id -> (Relates to an ad_sub_campaigns table, or possibly ad_campaigns).
+creative_id -> (Relates to an ad_creatives table).
+campaign_show_id -> (Relates to a shows table). show.id
+campaign_show_name -> shows.show_name
+purchase_show_id -> (Relates to a shows table, indicating a purchased show). show.id
+purchase_show_name -> show.show_name
+plan_id -> (Relates to a plans table). plan.id
+coupon_code_id -> coupons.coupon_code_id
+
+Relationships:
+One-to-many with users (one user can have many activity records).
+One-to-many with inferred streams (one stream can have many user interactions).
+One-to-many with inferred ad_campaigns.
+One-to-many with inferred ad_sub_campaigns.
+One-to-many with inferred ad_creatives.
+One-to-many with inferred shows.
+One-to-many with inferred plans.
+many to one relationship via campaign_show_id and campaign_show_name
+Implicit/Joinable Fields:
+
+sdate_tz, first_order_date, first_trial_date, etc.: Date fields for temporal analysis.
+platform_type, campaign_lang, primary_lang, channel, purpose, etc.: Dimensional fields for filtering and aggregation.
+campaign, campaign_name, sub_campaign_name: Fields that can be used to join with the biz_logic_costs table and the inferred campaign tables.
+marketing_source
+plan_type-> free_trial_orders.plan_flag
+
+
+
+
+
+
+
+Table: analytics.super.biz_logic_v2
+Description: Contains user activity data, including platform, stream, user details, and campaign information.
+Columns:
+sdate_tz (DATE) - Date of the record.
+Example: "2025-01-27"
+Unique Values: 2,399
+platform_type (STRING) - Type of platform.
+Example: "Overall-FM"
+Unique Values: 20, ["KukuFM Android App", "KukuFM Android Bhakti App", "KukuFM Android Kannada App", "KukuFM Android Love App", "KukuFM Android Tamil App", "KukuFM Android Telugu App", "KukuFM Android Udaan App", "KukuFM IOS App", "KukuFM Manifest XM App", "KukuFM USA Android App", "KukuGuru Android Hindi App", "KukuGuru Android Tamil App", "KukuTV Android App", "KukuTV Android Telugu App", "KukuTV IOS App", "KukuTV US Android App", "Overall", "Overall-FM", "Overall-Guru", "Overall-TV"]
+stream_id (LONG) - ID of the stream.
+Example: 9880357729
+Unique Values: 16, [1896756955, 2275693602, 4666966160, 9665578205, 9683080031, 9683149066, 9837289850, 9859223044, 9869340780, 9880142235, 9880270805, 9880322452, 9880357729, 9908888782, 9931188000, 9942422035]
+longname (STRING) - Long name of the application.
+Example: "com.vlv.aravali.lovenasha"
+Unique Values: 15, ["com.vlv.aravali", "com.vlv.aravali.bhakti", "com.vlv.aravali.kannada", "com.vlv.aravali.lovenasha", "com.vlv.aravali.reels", "com.vlv.aravali.reelsTelugu", "com.vlv.aravali.reelsUsa", "com.vlv.aravali.tamil", "com.vlv.aravali.telugu", "com.vlv.aravali.udaanHindi", "com.vlv.aravali.upskill", "com.vlv.aravali.upskillHindi", "com.vlv.aravali.usa", "com.vlv.kukufm", "com.vlv.manifest"]
+app_installation_rank (INT) - Rank of the app installation.
+Example: 101
+Unique Values: 18, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 101]
+final_profile_id (LONG) - ID of the user profile.
+Example: 93635520
+Unique Values: 97,776,485
+first_order_date (DATE) - Date of the first order.
+Example: "2025-02-06"
+Unique Values: 1,517
+purchase_dfs (STRING) - Purchase details.
+Example: "D0"
+Unique Values: 10, ["D0", "D1", "D2", "D3", "D30+", "D4", "D5", "D6", "D7", "D8-29"]
+first_trial_date (DATE) - Date of the first trial.
+Example: "2025-01-27"
+Unique Values: 967
+first_coin_date (DATE) - Date of the first coin usage.
+Example: null
+Unique Values: 387
+first_paid_coin_spent_date (DATE) - Date of the first paid coin spent.
+Example: null
+Unique Values: 377
+first_promo_date (DATE) - Date of the first promo.
+Example: "2024-11-06"
+Unique Values: 387
+attribution (STRING) - Attribution of the user.
+Example: "Overall-FM"
+Unique Values: 20, ["Current Attribution", "KukuFM Android App", "KukuFM Android Bhakti App", "KukuFM Android Kannada App", "KukuFM Android Love App", "KukuFM Android Tamil App", "KukuFM Android Telugu App", "KukuFM Android Udaan App", "KukuFM IOS App", "KukuFM Manifest XM App", "KukuFM USA Android App", "KukuGuru Android Hindi App", "KukuGuru Android Tamil App", "KukuTV Android App", "KukuTV Android Telugu App", "KukuTV IOS App", "KukuTV US Android App", "Overall-FM", "Overall-Guru", "Overall-TV"]
+network (STRING) - Network of the campaign.
+Example: "googleadwords_int"
+Unique Values: 941
+campaign (STRING) - Campaign details.
+Example: "GG|UAC|Hindi|PR||app|AR|No_Caps|||Subs|IN|Performance|BAU|trial_s2s|Kuku_LN|Jan 15"
+Unique Values: 9,895
+campaign_name (STRING) - Name of the campaign.
+Example: "GG|UAC|Hindi|PR||app|AR|No_Caps|||Subs|IN|Performance|BAU|trial_s2s|Kuku_LN|Jan 15"
+Unique Values: 6,292
+campaign_id (STRING) - ID of the campaign.
+Example: "22132252459"
+Unique Values: 72,252
+sub_campaign_name (STRING) - Name of the sub-campaign.
+Example: "Brand_Ads"
+Unique Values: 190,638
+sub_campaign_id (STRING) - ID of the sub-campaign.
+Example: "175115016884"
+Unique Values: 247,197
+
+
+Table: analytics.super.biz_logic_v2
+Description: Contains user activity data, including platform, stream, user details, and campaign information.
+columns
+creative_name (STRING) - Name of the creative.
+Example: "Ancestor_Of_republic_Era/EP_1/LC2254"
+Unique Values: 47,114
+creative_id (STRING) - ID of the creative.
+Example: "120215912348750221"
+Unique Values: 44,942
+contributor_1_touch_type (STRING) - Type of contributor 1 touch.
+Example: null
+Unique Values: 2, ["click", "impression"]
+contributor_1_campaign (STRING) - Campaign of contributor 1.
+Example: null
+Unique Values: 1,788
+contributor_2_touch_type (STRING) - Type of contributor 2 touch.
+Example: null
+Unique Values: 2, ["click", "impression"]
+contributor_2_campaign (STRING) - Campaign of contributor 2.
+Example: null
+Unique Values: 1,075
+campaign_lang (STRING) - Language of the campaign.
+Example: "hindi"
+Unique Values: 21, ["", "assamese", "bengali", "bhojpuri", "english", "english-us", "gujarati", "hindi", "kannada", "korean", "malayalam", "marathi", "oriya", "other_language", "portuguese", "punjabi", "sindhi", "tamil", "telugu", "ttmk", "urdu"]
+campaign_show_id (LONG) - ID of the campaign show.
+Example: 241029
+Unique Values: 4,889
+campaign_show_name (STRING) - Name of the campaign show.
+Example: "Nayi Padosan "
+Unique Values: 4,293
+campaign_cluster (STRING) - Cluster of the campaign.
+Example: "Curiosity"
+Unique Values: 12, ["Bytes", "Crime_thriller_horror", "Curiosity", "Fiction-rest", "Growth", "History + Info", "Love", "NF-Live", "NF-Removed", "SH_PF_R_H_I", "Self Help + PF", "storytel"]
+primary_lang (STRING) - Primary language of the user.
+Example: "hindi"
+Unique Values: 19, ["assamese", "bengali", "bhojpuri", "english", "english-us", "gujarati", "hindi", "kannada", "korean", "malayalam", "marathi", "oriya", "other_language", "portuguese", "punjabi", "sindhi", "tamil", "telugu", "urdu"]
+onboarding_lang (STRING) - Onboarding language of the user.
+Example: "hindi"
+Unique Values: 19, ["assamese", "bengali", "bhojpuri", "english", "english-us", "gujarati", "hindi", "kannada", "korean", "malayalam", "marathi", "oriya", "other_language", "portuguese", "punjabi", "sindhi", "tamil", "telugu", "urdu"]
+lang_combo (STRING) - Language combination.
+Example: "hindi"
+Unique Values: 1,194
+channel (STRING) - Marketing channel.
+Example: "google"
+Unique Values: 19, ["DV360", "IG", "Legacy Partnerships", "Moloco", "Organic", "Snapchat", "YT", "agency", "apple", "facebook", "google", "internal-others", "ios-search-ads", "null", "partnership", "paytm", "sharechat", "tiktok", "unity"]
+purpose (STRING) - Purpose of the campaign.
+Example: "performance"
+Unique Values: 12, ["branding", "expired", "installs", "ios", "partnership", "performance", "remarketing", "renewal", "renewal-annual", "renewal-monthly", "tofu-branding", "web"]
+type (STRING) - Type of campaign.
+Example: "BAU"
+Unique Values: 7, ["", "BAU", "HC", "Sale", "TOFU", "Test", "test"]
+category (STRING) - Category of the content.
+Example: "non-fiction"
+Unique Values: 3, ["", "fiction", "non-fiction"]
+biz_type (STRING) - Business type.
+Example: "India"
+Unique Values: 4, ["India", "International", "South Korea", "United States"]
+platform (STRING) - Platform.
+Example: "Android"
+Unique Values: 3, ["ANDROID", "Android", "IOS"]
+subscription_model (STRING) - Subscription model.
+Example: "Subs"
+Unique Values: 2, ["Coin", "Subs"]
+
+Table: analytics.super.biz_logic_v2
+Description: Contains user activity data, including platform, stream, user details, and campaign information.
+columns
+purchase_show_id (INT) - ID of the purchased show.
+Example: null
+Unique Values: 14,471
+purchase_show_name (STRING) - Name of the purchased show.
+Example: null
+Unique Values: 13,019
+plan_id (INT) - ID of the plan.
+Example: 35
+Unique Values: 30, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 33, 34, 35, 36, 71, 138, 172, 173, 174, 203, 236, 302, 402, 435, 436, 502, 503]
+plan_type (STRING) - Type of the plan.
+Example: "Annual_subs"
+Unique Values: 2, ["Annual_subs", "Monthly_trial"]
+amount (DOUBLE) - amount.
+Example: 399.0
+Unique Values: 12,307
+coupon_code_id (STRING)
+Example: null
+Unique Values: 376,686
+subscription_status (STRING) - Status of the subscription.
+Example: "active"
+Unique Values: 9, ["active", "autocancelled", "cancelled", "created", "expired", "failed", "failure", "rejected", "revoke_in_progress"]
+cancellation_dfs (STRING) - Cancellation details.
+Example: "D0"
+Unique Values: 10, ["D0", "D1", "D2", "D3", "D30+", "D4", "D5", "D6", "D7", "D8-29"]
+version (STRING) - Version of the app.
+Example: "4.8.4"
+Unique Values: 836
+city (STRING) - City of the user.
+Example: "Meerut"
+Unique Values: 22,027
+country (STRING) - Country of the user.
+Example: "India"
+Unique Values: 237
+app_install_store (STRING) - Store where the app was installed from.
+Example: "Google Playstore"
+Unique Values: 1, ["Google Playstore"]
+request_source (STRING) - Source of the request.
+Example: "juspay_recurring_init"
+Unique Values: 16, ["Apple Webhook order creation", "GooglePlay Webhook order creation", "Paytm Renew Subs Order Creation", "PhonePe Recurring INIT Order Creation", "Razorpay_V2 Recurring", "Recurring Payment via Paytm Subscription webhook", "Recurring Payment via Subscription webhook", "Simpl Recurring", "app", "apple_in_app_order_creation", "google_play_order_creation", "iosapp", "juspay_recurring_init", "phonepe_recurring_failed", "razorpay_v2_recurring_failed", "script"]
+gift_referral (STRING) - Gift referral status.
+Example: null
+Unique Values: 2, ["Gift", "Referral"]
+revenue (DOUBLE) - Revenue generated.
+Example: 399.0
+Unique Values: 12,307
+first_coin_amount (DOUBLE) - Amount of the first coin.
+Example: null
+Unique Values: 1,642
+campaign_country (STRING) - Country of the campaign.
+Example: "India"
+Unique Values: 238
+user_monetization_type (STRING) - User monetization type.
+Example: "Free Pure"
+Unique Values: 4, ["Free Pure", "Subs Pure", "VIP Pure", "VIP Subs mix"]
+coin_campaign_cohort_flag (BOOLEAN) - Flag for coin campaign cohort.
+Example: false
+Unique Values: 2, [false, true]
+marketing_source (STRING) - Marketing source.
+Example: "Google - New User"
+Unique Values: 15, ["Agency", "Branding (TOFU)", "Facebook - New User", "Facebook - Remarketing", "Facebook - Renewal", "Google - New User", "Google - Remarketing", "Google - Renewal", "Influencer Marketing", "Legacy Partnerships", "Organic", "Others", "Programmatic - Remarketing", "Programmatic-New User", "Snapchat - New User"]
+liftime_subs_revenue (DOUBLE) - Lifetime subscription revenue.
+Example: 399.0
+Unique Values: 36,113
+lifetime_coin_revenue (DOUBLE) - Lifetime coin revenue.
+Example: null
+Unique Values: 10,863
+

@@ -1,0 +1,52 @@
+Table: analytics.super.raw_listening_impression_combined_show_level
+Description: Contains data on user listening and impressions at the show level.
+Possible Primary Key: A combination of date_tz, final_profile_id, and show_id is likely unique. Surrogate key is ideal.
+primary key: id
+Foreign Keys (Potential/Inferred):
+final_profile_id -> users.id
+show_id -> shows.id
+
+Relationships:
+One-to-many with users.
+One-to-many with shows.
+
+Implicit/Joinable Fields:
+date_tz: Date/time for analysis.
+activity_platform: Platform dimension.
+
+
+
+
+Table: analytics.super.raw_listening_impression_combined_show_level
+Description: Contains data on user listening and impressions at the show level, including minutes listened and episode completion.
+Columns:
+date_tz (TIMESTAMP) - Date and time of the record.
+Example: "2024-01-01 00:00:00.000000"
+Unique Values: 409
+final_profile_id (LONG) - ID of the user profile.
+Example: 111089
+Unique Values: 53,251,843
+show_id (LONG) - ID of the show.
+Example: 181650
+Unique Values: 35,925
+activity_platform (STRING) - Platform of the activity.
+Example: "KukuFM Android App"
+Unique Values: 20, ["KukuFM Android App", "KukuFM Android Bhakti App", "KukuFM Android Guru App", "KukuFM Android Kannada App", "KukuFM Android Love App", "KukuFM Android Tamil App", "KukuFM Android Telugu App", "KukuFM Android Udaan App", "KukuFM IOS App", "KukuFM Manifest XM App", "KukuFM USA Android App", "KukuGuru Android Hindi App", "KukuGuru Android Tamil App", "KukuTV Android App", "KukuTV Android Guru App", "KukuTV Android Guru Hindi App", "KukuTV Android Telugu App", "KukuTV IOS App", "KukuTV US Android App", "dummy"]
+mins_listened (DECIMAL) - Minutes listened.
+Example: "48.566667"
+Unique Values: 71,994
+episode_1_listener (LONG) - Flag indicating if episode 1 was listened to.
+Example: 0
+Unique Values: 2, [0, 1]
+episode_1_completed (LONG) - Flag indicating if episode 1 was completed.
+Example: 0
+Unique Values: 2, [0, 1]
+impressions (LONG) - Number of impressions.
+Example: 1
+Unique Values: 2,669
+clicks (LONG) - Number of clicks.
+Example: 0
+Unique Values: 399
+show_viewed (LONG) - Flag indicating if the show was viewed.
+Example: null
+Unique Values: 169

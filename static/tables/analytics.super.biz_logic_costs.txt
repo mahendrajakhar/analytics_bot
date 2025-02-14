@@ -1,0 +1,110 @@
+Table: analytics.super.biz_logic_costs
+Description: Contains cost-related data for business logic, including advertising costs, impressions, clicks, and campaign details.
+
+Possible Primary Key: While no single column is explicitly unique, a composite key could be created. The best candidate would be a combination of date_tz, adn_campaign_id, adn_sub_campaign_id, and adn_creative_id. If this combination is not unique, a surrogate id column would need to be added. We will assume a surrogate key exists and name is just 'id'.
+Primary Key: id
+
+Foreign Keys (Potential/Inferred):
+adn_campaign_id -> (Likely relates to a campaigns table, but we don't have it in the provided schema. We'll infer a table named ad_campaigns).
+adn_sub_campaign_id -> (Likely relates to a sub_campaigns table, or potentially also the inferred ad_campaigns table, representing a hierarchical relationship).
+adn_creative_id -> (Likely relates to a creatives table, which we'll infer as ad_creatives).
+campaign_show_id -> (Likely relates to a shows table, defining which show the campaign is associated with).
+campaign_show_name -> shows.show_name(less likely to be use, but it will exist)
+
+Relationships:
+One-to-many with inferred ad_campaigns (one campaign can have many cost records).
+One-to-many with inferred ad_sub_campaigns (one sub-campaign can have many cost records).
+One-to-many with inferred ad_creatives (one creative can have many cost records).
+One-to-many with inferred shows (one show can have many associated campaigns and therefore cost records).
+Many to one to other columns of the same table (biz_logic_costs) via columns campaign_show_id and campaign_show_name.
+
+Implicit/Joinable Fields:
+date_tz: Could be joined with date fields in other tables (e.g., biz_logic_v2.sdate_tz, free_trial_orders.order_tz, etc.) for time-based analysis.
+language, category, channel, biz_type, campaign_country, type, platform_type, subscription_model: These fields represent dimensions that could be used to join with similar fields in other tables, or to filter and aggregate data.
+cost_source, marketing_source: These fields provide further granularity for relating costs to marketing activities.
+adn_campaign_name (this would be linked with biz_logic_v2.campaign_name, and campaign)
+purpose,source->free_trial_orders.source, biz_logic_v2.purpose, and premium_user_all_orders.source
+
+
+
+Table: analytics.super.biz_logic_costs
+Description: Contains cost-related data for business logic, including advertising costs, impressions, clicks, and campaign details.
+Columns:
+date_tz (DATE) - Date of the record.
+Example: "2024-03-09"
+Unique Values: 1,505
+adn_cost (DOUBLE) - Advertising cost.
+Example: 54109.3409
+Unique Values: 1,586,878
+impressions (DOUBLE) - Number of impressions.
+Example: 1181995.0
+Unique Values: 219,386
+clicks (DOUBLE) - Number of clicks.
+Example: 22563.0
+Unique Values: 19,496
+adn_campaign_name (STRING) - Name of the advertising campaign.
+Example: "GG|ACe|Hindi|RM||app|AR||||Subs|IN|Remarketing|BAU|payment_success"
+Unique Values: 7,216
+adn_campaign_id (STRING) - ID of the advertising campaign.
+Example: "14798655819"
+Unique Values: 10,491
+adn_sub_campaign_name (STRING) - Name of the advertising sub-campaign.
+Example: "Hindi_subs_view_not-purchased_30day"
+Unique Values: 43,027
+adn_sub_campaign_id (STRING) - ID of the advertising sub-campaign.
+Example: "136156519894"
+Unique Values: 70,881
+adn_creative_name (STRING) - Name of the advertising creative.
+Example: null
+Unique Values: 30,121
+adn_creative_id (STRING) - ID of the advertising creative
+Example: null
+Unique Values: 63,599
+campaign_show_id (LONG) - ID of the campaign show.
+Example: 198663
+Unique Values: 5,120
+campaign_show_name (STRING) - Name of the campaign show.
+Example: "Kaise Secure Karein Family Ka Future"
+Unique Values: 4,505
+purpose (STRING) - Purpose of the campaign.
+Example: "remarketing"
+Unique Values: 15, ["", "branding", "expired", "installs", "ios", "kpp", "partnership", "performance", "remarketing", "renewal", "renewal-annual", "renewal-monthly", "social", "tofu-branding", "web"]
+source (STRING) - Source of the data.
+Example: "AdWords"
+Unique Values: 18,306
+
+Table: analytics.super.biz_logic_costs
+Description: Contains cost-related data for business logic, including advertising costs, impressions, clicks, and campaign details.
+language (STRING) - Language of the campaign.
+Example: "hindi"
+Unique Values: 13, ["", "bengali", "english", "english-us", "hindi", "kannada", "korean", "malayalam", "marathi", "other_language", "tamil", "telugu", "ttmk"]
+category (STRING) - Category of the content.
+Example: "non-fiction"
+Unique Values: 4, ["", "fiction", "non-fiction", "others"]
+channel (STRING) - Marketing channel.
+Example: "google"
+Unique Values: 45, ["", "DV360", "FB", "Fleek", "GPay", "IG", "LinkedIn", "Moloco", "New partnerships", "Paytm", "PhonePe", "Snapchat", "Telegram", "Twitter", "YT", "adproduction", "agency", "airtel", "cheq", "collage_fests", "coupon_duniya", "couponz_guru", "earnly", "elitmus", "experiment", "facebook", "flipkart", "google", "jio", "meesho", "money_control", "msme", "newspaper", "ooh", "other_digital", "others", "ott", "paytm", "phonepe", "sharechat", "tiktok", "tv", "uber", "unity", "wynk"]
+biz_type (STRING) - Business type.
+Example: "India"
+Unique Values: 5, ["", "India", "International", "South Korea", "United States"]
+campaign_country (STRING) - Country of the campaign.
+Example: "India"
+Unique Values: 15, ["Bangladesh", "C\u00f4te d\u2019Ivoire", "India", "Kuwait", "Micronesia", "Nepal", "Pakistan", "Philippines", "Qatar", "Saudi Arabia", "South Korea", "Sri Lanka", "Tuvalu", "United Arab Emirates", "United States"]
+type (STRING) - Type of campaign.
+Example: "BAU"
+Unique Values: 10, ["", "B2B_Partnership", "BAU", "HC", "Others", "Sale", "TOFU", "Test", "kpp", "test"]
+platform_type (STRING) - Platform type.
+Example: "KukuFM Android App"
+Unique Values: 16, ["", "KukuFM Android App", "KukuFM Android Bhakti App", "KukuFM Android Kannada App", "KukuFM Android Love App", "KukuFM Android Tamil App", "KukuFM Android Telugu App", "KukuFM Android Udaan App", "KukuFM IOS App", "KukuFM USA Android App", "KukuGuru Android Hindi App", "KukuGuru Android Tamil App", "KukuTV Android App", "KukuTV Android Telugu App", "KukuTV IOS App", "KukuTV US Android App"]
+subscription_model (STRING) - Subscription model.
+Example: "Subs"
+Unique Values: 2, ["Coin", "Subs"]
+old_cost_source (STRING) - Old cost source.
+Example: "hindi-Remarketing"
+Unique Values: 75
+cost_source (STRING) - Cost source.
+Example: "Hindi-Remarketing"
+Unique Values: 36, ["BM-Branding", "BM-Facebook", "BM-Google", "BM-Influencer", "BM-Remarketing", "English-Agency", "English-Branding", "English-Facebook", "English-Google", "English-Influencer", "English-Others", "English_US-Influencer", "Hindi-Agency", "Hindi-Branding", "Hindi-Facebook", "Hindi-Google", "Hindi-Influencer", "Hindi-Legacy Partnerships", "Hindi-Miscellaneous", "Hindi-Others", "Hindi-Partnerships", "Hindi-Remarketing", "Hindi-Renewals", "Hindi-Renewals_Annual", "Hindi-Renewals_Monthly", "TTKM-Agency", "TTKM-Branding", "TTKM-Facebook", "TTKM-Google", "TTKM-Influencer", "TTKM-Legacy Partnerships", "TTKM-Others", "TTKM-Remarketing", "TTKM-Renewals", "TTKM-Renewals_Annual", "TTKM-Renewals_Monthly"]
+marketing_source (STRING) - Marketing source.
+Example: "Google - Remarketing"
+Unique Values: 15, ["Agency", "B2B_Partnership", "Branding", "Branding (TOFU)", "Facebook - New User", "Facebook - Remarketing", "Facebook - Renewal", "Google - New User", "Google - Remarketing", "Google - Renewal", "Influencer Marketing", "Others", "Programmatic - Remarketing", "Programmatic-New User", "Snapchat - New User"]

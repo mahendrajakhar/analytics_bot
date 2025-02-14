@@ -1,0 +1,210 @@
+Table: analytics.super.free_trial_orders
+Description: Contains information about free trial orders.
+
+Primary Key: order_id (appears to be unique).
+Foreign Keys (Potential/Inferred):
+
+final_profile_id -> users.id
+plan_id -> plans.id
+coupon_code_id -> (Relates to a coupons table). coupons.coupon_code_id
+subscription_id -> (Potentially relates to a subscriptions table. It could also be self-referencing within this table, if a free trial can be extended). subscriptions.subscription_id
+prev_plan_id -> plans.id
+
+Relationships:
+One-to-many with users.
+One-to-many with plans.
+One-to-many with inferred coupons.
+One-to-many with inferred subscriptions.
+Self-referencing via prev_order_tz, and prev_plan_id, to track changes in the plans.
+
+Implicit/Joinable Fields:
+order_tz, plan_start_date, plan_end_date, etc.: Dates.
+primary_lang, language, source, country, platform_type, etc.: Dimensions.
+spend_campaign_name and sing_network: Could link back to biz_logic_costs or inferred campaign tables.
+source links with biz_logic_costs.source and premium_user_all_orders.source
+
+
+
+
+Table: analytics.super.free_trial_orders
+Description: Contains information about free trial orders, including user details, plan information, and subscription status.
+
+Columns:
+order_tz (DATE) - Date of the order.
+Example: "2025-01-04"
+Unique Values: 969
+created_on_utc (TIMESTAMP) - Timestamp of order creation.
+Example: "2025-01-03 19:42:46.609000"
+Unique Values: 8,678,771
+order_id (INT) - ID of the order.
+Example: 136036874
+Unique Values: 8,681,247
+currency (STRING) - Currency of the order.
+Example: "INR"
+Unique Values: 57
+final_profile_id (INT) - ID of the user profile.
+Example: 143778
+Unique Values: 8,392,423
+primary_lang (STRING) - Primary language of the user.
+Example: "hindi"
+Unique Values: 13, ["assamese", "bengali", "english", "english-us", "hindi", "kannada", "korean", "malayalam", "marathi", "other_language", "punjabi", "tamil", "telugu"]
+language (STRING) - Language of the user.
+Example: "hindi"
+Unique Values: 14, ["", "bengali", "english", "english-us", "hindi", "kannada", "korean", "malayalam", "marathi", "other_language", "punjabi", "tamil", "telugu", "ttmk"]
+source (STRING) - Source of the order.
+Example: "Facebook - New User"
+Unique Values: 15, ["Agency", "Branding (TOFU)", "Facebook - New User", "Facebook - Remarketing", "Facebook - Renewal", "Google - New User", "Google - Remarketing", "Google - Renewal", "Influencer Marketing", "Legacy Partnerships", "Organic", "Others", "Programmatic - Remarketing", "Programmatic-New User", "Snapchat - New User"]
+country (STRING) - Country of the user.
+Example: "India"
+Unique Values: 168
+spend_campaign_name (STRING) - Name of the spending campaign.
+Example: "FB|ABO|Hindi|PR||app|AR||||Subs|IN|Performance|BAU|trial_s2s|KF_Udaan|Nov 19"
+Unique Values: 4,404
+sing_network (STRING) - Network of the campaign.
+Example: "Facebook Ads"
+Unique Values: 752
+plan_id (INT) - ID of the plan.
+Example: 33
+Unique Values: 18, [1, 3, 9, 10, 11, 12, 33, 34, 35, 36, 172, 173, 174, 203, 236, 402, 435, 436]
+plan_flag (STRING) - Flag of the plan.
+Example: "Quarterly"
+Unique Values: 5, ["Annual", "Monthly", "Others", "Quarterly", "Weekly"]
+coupon_code_id (STRING) - ID of the coupon code.
+Example: null
+Unique Values: 255,202
+validity (INT) - Validity of the plan in days.
+Example: 90
+Unique Values: 6, [7, 30, 90, 365, 395, 456]
+revenue (DOUBLE) - Revenue generated.
+Example: 0.0
+Unique Values: 68
+plan_start_date (DATE) - Start date of the plan.
+Example: "2025-01-04"
+Unique Values: 969
+plan_end_date (DATE) - End date of the plan.
+Example: "2025-01-11"
+Unique Values: 1,090
+is_subscription (BOOLEAN) - Flag indicating if it is a subscription.
+Example: true
+Unique Values: 2, [false, true]
+
+
+
+
+
+Table: analytics.super.free_trial_orders
+Description: Contains information about free trial orders, including user details, plan information, and subscription status.
+Columns:
+subscription_id (INT) - ID of the subscription.
+Example: 50641782
+Unique Values: 8,592,923
+subscription_status (STRING) - Status of the subscription.
+Example: "active"
+Unique Values: 12, ["active", "autocancelled", "cancelled", "created", "expired", "failed", "failure", "initiated", "paused", "rejected", "revoke_in_progress", "revoked"]
+subscription_platform (STRING) - Platform of the subscription.
+Example: "juspay"
+Unique Values: 8, ["apple_in_app", "google_play_in_app", "juspay", "paytm", "phonepe", "razorpay", "razorpay_v2", "simpl"]
+cancellation_reason (STRING) - Reason for cancellation.
+Example: null
+Unique Values: 41,931
+mandate_amount (STRING) - Mandate amount.
+Example: "299.0"
+Unique Values: 842
+mandate_created_on_tz (DATE) - Date of mandate creation.
+Example: "2025-01-04"
+Unique Values: 968
+mandate_end_date_tz (DATE) - End date of the mandate.
+Example: null
+Unique Values: 969
+mandate_end_time_utc (TIMESTAMP) - End time of the mandate.
+Example: null
+Unique Values: 1,965,647
+payment_gateway (STRING) - Payment gateway used.
+Example: "juspay"
+Unique Values: 9, ["apple_in_app", "google_play_in_app", "juspay", "paytm", "paytm_sdk_one_time", "phonepe", "razorpay", "razorpay_v2", "simpl"]
+payment_method (STRING) - Payment method used.
+Example: "Others"
+Unique Values: 3, ["Card", "Others", "UPI"]
+request_source (STRING) - Source of the request.
+Example: "app"
+Unique Values: 6, ["PhonePe Recurring INIT Order Creation", "Razorpay_V2 Recurring", "app", "apple_in_app_order_creation", "iosapp", "web"]
+first_order_tz (DATE) - Date of the first order.
+Example: "2025-01-04"
+Unique
+first_order_tz (DATE) - Date of the first order.
+Example: "2025-01-04"
+Unique Values: 969
+trial_user (INT) - Flag indicating if the user is a trial user.
+Example: 1
+Unique Values: 1, [1]
+first_trial_date (DATE) - Date of the first trial.
+Example: "2025-01-04"
+Unique Values: 969
+subs_type (STRING) - Type of subscription.
+Example: "B2C"
+Unique Values: 2, ["B2B", "B2C"]
+gift_referral (STRING) - Gift referral status.
+Example: null
+Unique Values: 0, [] (Note: This column appears to be empty in the provided data.)
+platform_type (STRING) - Type of platform.
+Example: "KukuFM Android Udaan App"
+Unique Values: 16, ["KukuFM Android App", "KukuFM Android Bhakti App", "KukuFM Android Kannada App", "KukuFM Android Love App", "KukuFM Android Tamil App", "KukuFM Android Telugu App", "KukuFM Android Udaan App", "KukuFM IOS App", "KukuFM USA Android App", "KukuFM Web", "KukuGuru Android Hindi App", "KukuGuru Android Tamil App", "KukuTV Android App", "KukuTV Android Telugu App", "KukuTV IOS App", "KukuTV US Android App"]
+
+
+Table: analytics.super.free_trial_orders
+Description: Contains information about free trial orders, including user details, plan information, and subscription status.
+Columns:
+pre_platform_type (STRING) - Previous platform type.
+Example: "KukuFM Android Udaan App"
+Unique Values: 16, ["KukuFM Android App", "KukuFM Android Bhakti App", "KukuFM Android Kannada App", "KukuFM Android Love App", "KukuFM Android Tamil App", "KukuFM Android Telugu App", "KukuFM Android Udaan App", "KukuFM IOS App", "KukuFM USA Android App", "KukuFM Web", "KukuGuru Android Hindi App", "KukuGuru Android Tamil App", "KukuTV Android App", "KukuTV Android Telugu App", "KukuTV IOS App", "KukuTV US Android App"]
+package_name (STRING) - Name of the package.
+Example: "com.vlv.aravali.udaanHindi"
+Unique Values: 19, ["com.vlv.aravaIi.udaan.Hindi", "com.vlv.aravaIi.upskillHindi", "com.vlv.aravali", "com.vlv.aravali.bhakti", "com.vlv.aravali.kannada", "com.vlv.aravali.lovenasha", "com.vlv.aravali.preprod", "com.vlv.aravali.reels", "com.vlv.aravali.reelsTelugu", "com.vlv.aravali.reelsUsa", "com.vlv.aravali.tamil", "com.vlv.aravali.telugu", "com.vlv.aravali.udaanHindi", "com.vlv.aravali.upskill", "com.vlv.aravali.upskillHindi", "com.vlv.aravali.usa", "com.vlv.aravalj", "com.vlv.kukufm", "com.vlv.kukufm.reels"]
+final_pg (STRING) - Final payment gateway.
+Example: "phonepe"
+Unique Values: 10, ["apple_in_app", "google_play_in_app", "juspay", "paytm", "paytm_sdk_one_time", "paytm_v2", "phonepe", "razorpay", "razorpay_v2", "simpl"]
+associated_final_profile_id (INT) - ID of the associated profile.
+Example: null
+Unique Values: 0 (Note: This column appears to be empty in the provided data.)
+row_num (INT) - Row number.
+Example: 1
+Unique Values: 58
+row_num_subs (INT) - Row number for subscriptions.
+Example: 1
+Unique Values: 57
+prev_order_tz (DATE) - Date of the previous order.
+Example: null
+Unique Values: 828
+prev_plan_id (INT) - ID of the previous plan.
+Example: null
+Unique Values: 17, [1, 3, 9, 10, 11, 12, 33, 34, 35, 36, 172, 174, 203, 236, 402, 435, 436]
+prev_plan_flag (STRING) - Flag of the previous plan.
+Example: null
+Unique Values: 5, ["Annual", "Monthly", "Others", "Quarterly", "Weekly"]
+prev_plan_start_date (DATE) - Start date of the previous plan.
+Example: null
+Unique Values: 887
+prev_plan_end_date (DATE) - End date of the previous plan.
+Example: null
+Unique Values: 876
+trial_order (INT) - Flag indicating if it is a trial order.
+Example: 1
+Unique Values: 1, [1]
+continuing_flag (INT) - Flag indicating if the subscription is continuing.
+Example: 1
+Unique Values: 2, [0, 1]
+day_diff_plan_start (INT) - Difference in days from the plan start.
+Example: null
+Unique Values: 939
+plan_update_flag (String)
+Example: "Quarterly"
+Unique Values: 20, ["Annual", "Annual to Annual", "Annual to Quarterly", "Monthly", "Monthly to Annual", "Monthly to Monthly", "Monthly to Others", "Monthly to Quarterly", "Others", "Others to Annual", "Others to Others", "Others to Quarterly", "Quarterly", "Quarterly to Annual", "Quarterly to Monthly", "Quarterly to Quarterly", "Quarterly to Weekly", "Weekly", "Weekly to Quarterly", "Weekly to Weekly"]
+new_sub (INT) - Flag indicating if it is a new subscription.
+Example: 1
+Unique Values: 2, [0, 1]
+renew_sub (INT) - Flag indicating if it is a renewed subscription.
+Example: 0
+Unique Values: 2, [0, 1]
+re_active_flag (INT) - Flag indicating if the subscription is reactivated.
+Example: 0
+Unique Values: 2, [0, 1]

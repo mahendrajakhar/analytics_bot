@@ -1,9 +1,10 @@
+import os
 from openai import AsyncOpenAI
 from sqlalchemy.orm import Session
 from typing import Dict, List, Optional, Tuple
 import json
 import logging
-from api.config import settings
+from api.config import settings, langchain_service  # Add langchain_service import
 from api.services.sql_service import SQLService
 from api.services.graph_service import GraphService
 from api.utils.message_utils import (
@@ -17,14 +18,13 @@ from api.utils.message_utils import (
     send_graph_status,
     send_graph
 )
-from api.models import ChatHistory
+from api.models import CommandType  # Update import to only get what we need
 from api.handlers.history_handlers import save_chat_history, load_chat_history
 
 logger = logging.getLogger(__name__)
 
 class SlackChatService:
-    def __init__(self, db: Session, sql_service: SQLService, mongodb_service):
-        self.db = db
+    def __init__(self, sql_service: SQLService, mongodb_service):
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.sql_service = sql_service
         self.mongodb_service = mongodb_service
@@ -33,7 +33,11 @@ class SlackChatService:
         # Define system prompts for different flows
         self.SYSTEM_PROMPTS = {
             "sql": """You are a SQL query assistant. Help users write SQL queries by converting their questions into SQL.
-Format the SQL query with sql ``` ... ``` markers.""",
+Format the SQL query with sql ``` ... ``` markers. STRICT NOTE: only use column names which are present.
+and for getting data for time use these 
+for month : date_trunc('month',date_tz)::date = '2025-01-01'
+for day : date_trunc('day',date_tz)::date = '2025-01-01'
+etc.""",
 
             "graph_step1": """You are a SQL expert. I need help writing a SQL query to answer the user question
 according to Available tables and their schemas.
@@ -46,7 +50,12 @@ Requirements:
 - Add comments explaining key parts of the query
 - Consider including important aggregations or calculations that might be needed
 
-Please provide SQL query only, wrapped in sql ``` ... ``` markers.""",
+Please provide SQL query only, wrapped in sql ``` ... ``` markers.
+STRICT NOTE: only use column names which are present.
+and for getting data for time use these 
+for month : date_trunc('month',date_tz)::date = '2025-01-01'
+for day : date_trunc('day',date_tz)::date = '2025-01-01'
+etc.""",
 
             "graph_step2": """I have a user question and sample data from our database. Help me create a complete SQL query and visualization code.
 
@@ -71,7 +80,12 @@ Visualization Requirements:
 
 Please format your response with:
 1. SQL query wrapped in sql ``` ... ``` markers
-2. Python visualization code wrapped in python ``` ... ``` markers""",
+2. Python visualization code wrapped in python ``` ... ``` markers
+STRICT NOTE: only use column names which are present.
+and for getting data for time use these 
+for month : date_trunc('month',date_tz)::date = '2025-01-01'
+for day : date_trunc('day',date_tz)::date = '2025-01-01'
+etc.""",
 
             "explain": """You are a SQL query explainer. Break down SQL queries into clear, understandable parts.
 
@@ -88,15 +102,19 @@ Format your response in a clear, structured way:
     def _prepare_conversation_context(self, user_id: str, new_question: str, flow_type: str, additional_context: str = "") -> List[Dict[str, str]]:
         """Common method to prepare conversation context for all flows"""
         try:
+            
             # Load schema information
-            with open("static/db_structure.json", "r") as f:
-                db_structure = json.load(f)
-
+            with open("static/db_structure.txt", "r") as f:
+                db_structure = f.read()
+            # Get relevant schema context from LangChain service
+            schema_context = langchain_service.get_schema_context(new_question)
+            logger.debug(f"[CONTEXT] Schema context: {schema_context[:200]}...")  # Log first 200 chars
             # Get appropriate system prompt
             system_message = self.SYSTEM_PROMPTS.get(flow_type, self.SYSTEM_PROMPTS["sql"])
             
             # Add schema information
-            system_message += f"\n\nAvailable tables and their schemas:\n{json.dumps(db_structure, indent=2)}\n"
+            assistant_context = f"This is context to use Available tables and their columns:\n{db_structure}\n"
+            assistant_context += f"\n\nRelevant Database Schema Info from rag:\n{schema_context}\n"
 
             # Load user's chat history
             history = load_chat_history(user_id)
@@ -113,17 +131,17 @@ Format your response in a clear, structured way:
                 elif chat.get('ai_response'):
                     messages.append({"role": "assistant", "content": chat['ai_response']})
 
-            # Add current question
+            messages.append({"role": "assistant", "content": assistant_context})
+            # Add current question and additional context
             messages.append({"role": "user", "content": new_question})
-
-            # Add additional context if provided
             if additional_context:
                 messages.append({"role": "system", "content": additional_context})
 
+            logger.info(f"[CONTEXT] Final context prepared with {len(messages)} messages")
             return messages
 
         except Exception as e:
-            logger.error(f"Error preparing conversation context: {e}")
+            logger.exception("[CONTEXT] Error preparing conversation context")
             return [
                 {"role": "system", "content": self.SYSTEM_PROMPTS.get(flow_type, self.SYSTEM_PROMPTS["sql"])},
                 {"role": "user", "content": new_question}
@@ -131,17 +149,29 @@ Format your response in a clear, structured way:
 
     def _extract_code(self, response: str) -> Tuple[Optional[str], Optional[str]]:
         """Extract both SQL query and visualization code from response"""
-        import re
-        
-        # Extract SQL query
-        sql_match = re.search(r"```sql\n(.*?)\n```", response, re.DOTALL)
-        sql_query = sql_match.group(1).strip() if sql_match else None
-        
-        # Extract Python/visualization code
-        viz_match = re.search(r"```python\n(.*?)\n```", response, re.DOTALL)
-        viz_code = viz_match.group(1).strip() if viz_match else None
-        
-        return sql_query, viz_code
+        try:
+            logger.debug(f"[EXTRACT] Processing response: {response[:200]}...")  # Log first 200 chars
+            
+            import re
+            # Extract SQL query
+            sql_match = re.search(r"```sql\n(.*?)\n```", response, re.DOTALL)
+            if sql_match:
+                sql_query = sql_match.group(1).strip()
+                logger.info(f"[EXTRACT] Successfully extracted SQL query: {sql_query}")
+            else:
+                logger.error("[EXTRACT] No SQL query found in response")
+                logger.error(f"[EXTRACT] Response content: {response}")
+                sql_query = None
+            
+            # Extract Python/visualization code
+            viz_match = re.search(r"```python\n(.*?)\n```", response, re.DOTALL)
+            viz_code = viz_match.group(1).strip() if viz_match else None
+            
+            return sql_query, viz_code
+
+        except Exception as e:
+            logger.exception("[EXTRACT] Error extracting code")
+            return None, None
 
     async def process_graph_command(self, request: Dict[str, str], channel_id: str, message_ts: str) -> Dict[str, str]:
         """Process graph command to generate visualization"""
@@ -242,6 +272,9 @@ Format your response in a clear, structured way:
     async def process_sql_command(self, request: Dict[str, str], channel_id: str, message_ts: str) -> Dict[str, str]:
         """Process SQL command - return query without executing it"""
         try:
+            logger.info(f"[SQL] Started processing for user {request['user_id']}")
+            logger.info(f"[SQL] Question: {request['question']}")
+
             # Update message to show processing
             update_with_processing(channel_id, message_ts, "Generating SQL query... ")
 
@@ -251,21 +284,28 @@ Format your response in a clear, structured way:
                 new_question=request["question"],
                 flow_type="sql"
             )
+            logger.info(f"[SQL] Prepared context with {len(messages)} messages")
 
             # Get response from OpenAI
+            logger.info("[SQL] Sending request to OpenAI")
             response = await self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.7
             )
+            logger.info("[SQL] Received response from OpenAI")
 
             assistant_response = response.choices[0].message.content
+            logger.info(f"[SQL] AI Response: {assistant_response}")
             sql_query = self._extract_code(assistant_response)[0]
 
             if not sql_query:
                 error_msg = "Could not generate SQL query from the response"
+                logger.error(f"[SQL] Failed to extract SQL query. AI Response: {assistant_response}")
                 send_error(channel_id, message_ts, {}, error_msg)
                 return {"error": error_msg}
+
+            logger.info(f"[SQL] Generated SQL Query: {sql_query}")
 
             # Format the response with the SQL query
             formatted_response = {
@@ -291,14 +331,17 @@ Format your response in a clear, structured way:
             }
 
         except Exception as e:
+            logger.exception("[SQL] Unexpected error in process_sql_command")
             error_msg = f"Error processing SQL command: {str(e)}"
-            logger.error(error_msg)
             send_error(channel_id, message_ts, {}, error_msg)
             return {"error": error_msg}
 
     async def process_ask_command(self, request: Dict[str, str], channel_id: str, message_ts: str) -> Dict[str, str]:
         """Process ask command - execute query and return results"""
         try:
+            logger.info(f"[ASK] Started processing for user {request['user_id']}")
+            logger.info(f"[ASK] Question: {request['question']}")
+
             # Update message to show processing
             update_with_processing(channel_id, message_ts, "Generating SQL query... ")
 
@@ -308,29 +351,43 @@ Format your response in a clear, structured way:
                 new_question=request["question"],
                 flow_type="sql"
             )
+            logger.info(f"[ASK] Prepared context with {len(messages)} messages")
 
             # Get response from OpenAI
+            logger.info("[ASK] Sending request to OpenAI")
             response = await self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.7
             )
+            logger.info("[ASK] Received response from OpenAI")
 
-            sql_query = self._extract_code(response.choices[0].message.content)[0]
+            # Extract SQL query
+            ai_response = response.choices[0].message.content
+            logger.info(f"[ASK] AI Response: {ai_response}")
+            
+            sql_query = self._extract_code(ai_response)[0]
             if not sql_query:
                 error_msg = "Could not generate SQL query from the response"
+                logger.error(f"[ASK] Failed to extract SQL query. AI Response: {ai_response}")
                 send_error(channel_id, message_ts, {}, error_msg)
                 return {"error": error_msg}
 
-            # Update message to show query execution
-            update_with_processing(channel_id, message_ts, "Executing query... ")
+            logger.info(f"[ASK] Generated SQL Query: {sql_query}")
 
-            # Execute query
-            query_result, error = await self.sql_service.execute_query(sql_query)
+            # Execute query with user question for error resolution
+            logger.info("[ASK] Executing SQL query")
+            query_result, error = await self.sql_service.execute_query(
+                sql_query, 
+                user_question=request["question"]
+            )
+            
             if error:
-                error_msg = f"Error executing query: {error}"
-                send_error(channel_id, message_ts, {}, error_msg)
-                return {"error": error_msg}
+                logger.error(f"[ASK] SQL execution error: {error}")
+                send_error(channel_id, message_ts, {}, f"Error executing query: {error}")
+                return {"error": error}
+
+            logger.info(f"[ASK] Query executed successfully. Rows: {len(query_result['rows']) if query_result else 0}")
 
             # Format the response
             formatted_response = format_query_result(query_result)
@@ -358,7 +415,7 @@ Format your response in a clear, structured way:
             }
 
         except Exception as e:
+            logger.exception("[ASK] Unexpected error in process_ask_command")
             error_msg = f"Error processing ask command: {str(e)}"
-            logger.error(error_msg)
             send_error(channel_id, message_ts, {}, error_msg)
             return {"error": error_msg}

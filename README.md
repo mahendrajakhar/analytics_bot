@@ -158,3 +158,7 @@ ngrok http --region=us --subdomain=customname 8000```
 
 
 clear && uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+
+
+TODO fiass indexing you have to add text files in static/tables folder all the .txt and .json files will be added in indexing 

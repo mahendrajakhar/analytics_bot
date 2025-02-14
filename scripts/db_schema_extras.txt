@@ -1,0 +1,7 @@
+Key Improvements & Considerations for NL2SQL:
+Clear Naming: Use descriptive table and column names.
+Data Types: Ensure data types are correctly defined (e.g., DATE, TIMESTAMP, INT, DOUBLE, STRING, BOOLEAN).
+Relationships: Explicitly define relationships (one-to-many, many-to-many) using foreign keys. The inferred tables above are crucial.
+Contextual Information: Add descriptions to tables and columns to provide context for the NL2SQL model.
+Synonyms: Consider adding synonyms for column names (e.g., "cost" could also be "spend", "expense"). This helps the model understand different ways users might phrase the same concept.
+Normalization: Make sure that table is normalized.
