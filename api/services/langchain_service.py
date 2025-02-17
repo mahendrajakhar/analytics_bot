@@ -172,7 +172,7 @@ class LangChainService:
             docs = self.vectorstore.similarity_search(
                 question, 
                 k=max_chunks,
-                fetch_k=max_chunks * 7  # Fetch more candidates for better matching
+                fetch_k=max_chunks * 4  # Fetch more candidates for better matching
             )
             
             # Combine and format the context

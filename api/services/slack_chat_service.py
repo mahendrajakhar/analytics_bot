@@ -18,13 +18,13 @@ from api.utils.message_utils import (
     send_graph_status,
     send_graph
 )
-from api.models import CommandType  # Update import to only get what we need
 from api.handlers.history_handlers import save_chat_history, load_chat_history
 
 logger = logging.getLogger(__name__)
 
 class SlackChatService:
-    def __init__(self, sql_service: SQLService, mongodb_service):
+    def __init__(self, db: Session, sql_service: SQLService, mongodb_service):
+        self.db = db
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.sql_service = sql_service
         self.mongodb_service = mongodb_service
@@ -33,11 +33,7 @@ class SlackChatService:
         # Define system prompts for different flows
         self.SYSTEM_PROMPTS = {
             "sql": """You are a SQL query assistant. Help users write SQL queries by converting their questions into SQL.
-Format the SQL query with sql ``` ... ``` markers. STRICT NOTE: only use column names which are present.
-and for getting data for time use these 
-for month : date_trunc('month',date_tz)::date = '2025-01-01'
-for day : date_trunc('day',date_tz)::date = '2025-01-01'
-etc.""",
+Format the SQL query with sql ``` ... ``` markers.""",
 
             "graph_step1": """You are a SQL expert. I need help writing a SQL query to answer the user question
 according to Available tables and their schemas.
@@ -50,12 +46,7 @@ Requirements:
 - Add comments explaining key parts of the query
 - Consider including important aggregations or calculations that might be needed
 
-Please provide SQL query only, wrapped in sql ``` ... ``` markers.
-STRICT NOTE: only use column names which are present.
-and for getting data for time use these 
-for month : date_trunc('month',date_tz)::date = '2025-01-01'
-for day : date_trunc('day',date_tz)::date = '2025-01-01'
-etc.""",
+Please provide SQL query only, wrapped in sql ``` ... ``` markers.""",
 
             "graph_step2": """I have a user question and sample data from our database. Help me create a complete SQL query and visualization code.
 
@@ -80,12 +71,7 @@ Visualization Requirements:
 
 Please format your response with:
 1. SQL query wrapped in sql ``` ... ``` markers
-2. Python visualization code wrapped in python ``` ... ``` markers
-STRICT NOTE: only use column names which are present.
-and for getting data for time use these 
-for month : date_trunc('month',date_tz)::date = '2025-01-01'
-for day : date_trunc('day',date_tz)::date = '2025-01-01'
-etc.""",
+2. Python visualization code wrapped in python ``` ... ``` markers""",
 
             "explain": """You are a SQL query explainer. Break down SQL queries into clear, understandable parts.
 
@@ -104,8 +90,8 @@ Format your response in a clear, structured way:
         try:
             
             # Load schema information
-            with open("static/db_structure.txt", "r") as f:
-                db_structure = f.read()
+            with open("static/db_structure.json", "r") as f:
+                db_structure = json.load(f)
             # Get relevant schema context from LangChain service
             schema_context = langchain_service.get_schema_context(new_question)
             logger.debug(f"[CONTEXT] Schema context: {schema_context[:200]}...")  # Log first 200 chars
@@ -113,7 +99,7 @@ Format your response in a clear, structured way:
             system_message = self.SYSTEM_PROMPTS.get(flow_type, self.SYSTEM_PROMPTS["sql"])
             
             # Add schema information
-            assistant_context = f"This is context to use Available tables and their columns:\n{db_structure}\n"
+            assistant_context = f"This is context to use Available tables and their columns:\n{json.dumps(db_structure, indent=2)}\n"
             assistant_context += f"\n\nRelevant Database Schema Info from rag:\n{schema_context}\n"
 
             # Load user's chat history
@@ -375,12 +361,9 @@ Format your response in a clear, structured way:
 
             logger.info(f"[ASK] Generated SQL Query: {sql_query}")
 
-            # Execute query with user question for error resolution
+            # Execute query
             logger.info("[ASK] Executing SQL query")
-            query_result, error = await self.sql_service.execute_query(
-                sql_query, 
-                user_question=request["question"]
-            )
+            query_result, error = await self.sql_service.execute_query(sql_query)
             
             if error:
                 logger.error(f"[ASK] SQL execution error: {error}")

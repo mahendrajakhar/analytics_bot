@@ -5,6 +5,8 @@ import io
 from typing import Dict, Any, Tuple, Optional
 import pandas as pd
 import logging
+import tempfile
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +17,8 @@ signature_verifier = SignatureVerifier(settings.SLACK_SIGNING_SECRET)
 class TableHandler:
     """Handles large table data formatting and conversion"""
     
-    MAX_COLUMNS = 3
-    MAX_ROWS = 15
+    MAX_COLUMNS = 10  # Updated from 3 to 10
+    MAX_ROWS = 40    # Updated from 15 to 30
     
     @staticmethod
     def analyze_data(query_result: Dict[str, Any]) -> Tuple[int, int]:
@@ -74,66 +76,88 @@ class TableHandler:
             logger.error(f"Error creating Excel file: {e}")
             return None
 
+def convert_timezone_aware_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Convert timezone-aware datetime columns to timezone-naive"""
+    for column in df.select_dtypes(include=['datetime64[ns, UTC]']).columns:
+        df[column] = df[column].dt.tz_localize(None)
+    return df
+
 def format_query_result(query_result: Dict[str, Any]) -> Dict[str, Any]:
-    """Format query result for Slack with support for large tables"""
-    if not query_result:
-        return {"type": "text", "text": "No results to display"}
-    
-    table_handler = TableHandler()
-    
-    # Analyze data dimensions
-    num_rows, num_cols = table_handler.analyze_data(query_result)
-    
-    # Determine format based on data size
-    if table_handler.should_use_excel(num_rows, num_cols):
-        excel_result = table_handler.create_excel_file(query_result)
-        if excel_result:
-            excel_buffer, summary = excel_result
-            return {
-                "type": "excel",
-                "excel_file": excel_buffer,
-                "text": summary
-            }
-    
-    # For smaller tables, use regular formatting
+    """Format query results for Slack display"""
     try:
-        # Extract columns and rows
-        columns = [str(col) for col in query_result['columns']]
-        rows = query_result['rows']
+        if not query_result or not query_result.get('rows'):
+            return {"text": "No results found.", "type": "text"}
+
+        df = pd.DataFrame(query_result['rows'], columns=query_result['columns'])
         
-        if not rows:
-            return {"type": "text", "text": "No results found"}
+        # Convert timezone-aware datetime columns
+        df = convert_timezone_aware_columns(df)
         
-        # Calculate max width for each column
-        col_widths = {col: len(col) for col in columns}
-        for row in rows:
-            for i, value in enumerate(row):
-                col_widths[columns[i]] = max(col_widths[columns[i]], len(str(value)))
+        total_rows = len(df)
+        total_cols = len(df.columns)
         
-        # Build table
-        table = []
+        # For results within limits, return as code block
+        if total_rows <= TableHandler.MAX_ROWS and total_cols <= TableHandler.MAX_COLUMNS:
+            # Format datetime columns for display
+            for col in df.select_dtypes(include=['datetime64']).columns:
+                df[col] = df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+            
+            table_str = df.to_string(index=False)
+            return {
+                "text": f"Query returned {total_rows} rows and {total_cols} columns:\n```{table_str}```",
+                "type": "text"
+            }
         
-        # Header
-        header = "| " + " | ".join(f"{col:<{col_widths[col]}}" for col in columns) + " |"
-        separator = "|" + "|".join("-" * (width + 2) for width in col_widths.values()) + "|"
+        # For larger results, create Excel file
+        # Calculate sheets needed (max 1M rows per sheet)
+        MAX_ROWS_PER_SHEET = 1000000
+        total_sheets = math.ceil(total_rows / MAX_ROWS_PER_SHEET)
         
-        table.append(header)
-        table.append(separator)
-        
-        # Rows
-        for row in rows:
-            row_str = "| " + " | ".join(f"{str(value):<{col_widths[columns[i]]}} " 
-                          for i, value in enumerate(row)) + "|"
-            table.append(row_str)
-        
+        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as temp_file:
+            if total_sheets == 1:
+                # Single sheet case
+                df.to_excel(temp_file.name, index=False, sheet_name='Results')
+            else:
+                # Multiple sheets case
+                with pd.ExcelWriter(temp_file.name, engine='xlsxwriter') as writer:
+                    for i in range(total_sheets):
+                        start_idx = i * MAX_ROWS_PER_SHEET
+                        end_idx = min((i + 1) * MAX_ROWS_PER_SHEET, total_rows)
+                        sheet_name = f'Results_Part_{i+1}'
+                        
+                        # Get the slice of data for this sheet
+                        sheet_df = df.iloc[start_idx:end_idx].copy()
+                        
+                        sheet_df.to_excel(
+                            writer, 
+                            sheet_name=sheet_name,
+                            index=False
+                        )
+                        
+                        # Optional: Adjust column widths for better readability
+                        worksheet = writer.sheets[sheet_name]
+                        for idx, col in enumerate(sheet_df.columns):
+                            max_length = max(
+                                sheet_df[col].astype(str).str.len().max(),
+                                len(str(col))
+                            )
+                            worksheet.set_column(idx, idx, min(max_length + 2, 50))
+
         return {
-            "type": "table",
-            "text": "*Results:*\n```\n" + "\n".join(table) + "\n```"
+            "text": (f"Query returned {total_rows} rows and {total_cols} columns. "
+                    f"Due to size (>30 rows or >10 columns), data has been exported to Excel "
+                    f"and split into {total_sheets} sheet{'s' if total_sheets > 1 else ''}."),
+            "type": "excel",
+            "excel_file": temp_file.name
         }
-        
+
     except Exception as e:
-        logger.error(f"Error formatting table: {e}")
-        return {"type": "text", "text": str(query_result)}
+        logger.error(f"Error formatting query result: {e}")
+        logger.exception("Full traceback:")  # Add full traceback logging
+        return {
+            "text": f"Error creating result format: {str(e)}",
+            "type": "text"
+        }
 
 def send_initial_response(channel_id: str) -> dict:
     """Send initial 'processing' message"""

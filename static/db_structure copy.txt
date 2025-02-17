@@ -1,7 +1,4 @@
-Database: analytics.super
-Purpose: Stores user analytics data, including cost, user activity, and order information.
-
-Table: biz_logic_costs
+Table: analytics.super.biz_logic_costs
 Description: Contains cost-related data for business logic, including advertising costs, impressions, clicks, and campaign details.
 
 Possible Primary Key: While no single column is explicitly unique, a composite key could be created. The best candidate would be a combination of date_tz, adn_campaign_id, adn_sub_campaign_id, and adn_creative_id. If this combination is not unique, a surrogate id column would need to be added. We will assume a surrogate key exists and name is just 'id'.
@@ -35,7 +32,7 @@ purpose,source->free_trial_orders.source, biz_logic_v2.purpose, and premium_user
 
 
 
-Table: biz_logic_costs
+Table: analytics.super.biz_logic_costs
 Description: Contains cost-related data for business logic, including advertising costs, impressions, clicks, and campaign details.
 Columns:
 date_tz (DATE) - Date of the record.
@@ -125,7 +122,7 @@ Unique Values: 15, ["Agency", "B2B_Partnership", "Branding", "Branding (TOFU)", 
 
 
 
-Table: biz_logic_v2
+Table: analytics.super.biz_logic_v2
 Description: Contains user activity data, including platform, stream, user details, and campaign information.
 
 Possible Primary Key: Again, no single unique column. A composite key could be formed from sdate_tz, final_profile_id, stream_id, and potentially campaign_id and sub_campaign_id or other activity identifiers. A surrogate key named 'id' is the best choice.
@@ -170,7 +167,7 @@ plan_type-> free_trial_orders.plan_flag
 
 
 
-Table: biz_logic_v2
+Table: analytics.super.biz_logic_v2
 Description: Contains user activity data, including platform, stream, user details, and campaign information.
 
 
@@ -372,7 +369,7 @@ Unique Values: 10,863
 
 
 
-Table: free_trial_orders
+Table: analytics.super.free_trial_orders
 Description: Contains information about free trial orders.
 
 Primary Key: order_id (appears to be unique).
@@ -403,7 +400,7 @@ source links with biz_logic_costs.source and premium_user_all_orders.source
 
 
 
-Table: free_trial_orders
+Table: analytics.super.free_trial_orders
 Description: Contains information about free trial orders, including user details, plan information, and subscription status.
 
 Columns:
@@ -586,7 +583,7 @@ Unique Values: 2, [0, 1]
 
 
 
-Table: raw_listening_impression_combined_show_level
+Table: analytics.super.raw_listening_impression_combined_show_level
 Description: Contains data on user listening and impressions at the show level.
 Possible Primary Key: A combination of date_tz, final_profile_id, and show_id is likely unique. Surrogate key is ideal.
 primary key: id
@@ -608,7 +605,7 @@ activity_platform: Platform dimension.
 
 
 
-Table: raw_listening_impression_combined_show_level
+Table: analytics.super.raw_listening_impression_combined_show_level
 Description: Contains data on user listening and impressions at the show level, including minutes listened and episode completion.
 Columns:
 date_tz (TIMESTAMP) - Date and time of the record.
@@ -650,7 +647,7 @@ Unique Values: 169
 
 
 
-Table: premium_user_all_order
+Table: analytics.super.premium_user_all_order
 Description: Contains comprehensive information about all orders from premium users.
 Primary Key: order_id (appears to be unique).
 
@@ -682,7 +679,7 @@ source links with biz_logic_costs.source and free_trial_orders.source
 
 
 
-Table: premium_user_all_order
+Table: analytics.super.premium_user_all_order
 Description: Contains comprehensive information about all orders from premium users, including order details, subscription status, and payment information
 Columns:
 order_tz (DATE) - Date of the order.
@@ -904,7 +901,7 @@ Unique Values: 2, [0, 1]
 
 
 
-Table: master_product_funnel_base
+Table: analytics.super.master_product_funnel_base
 Description: Tracks user activity through a product funnel.
 Possible Primary Key: A combination of date_tz and final_profile_id is likely, though additional activity identifiers might be needed. Surrogate key named 'id'
 primary key: id
@@ -922,7 +919,7 @@ date_tz: Date for time-series analysis.
 platform_type: Platform dimension.
 age_bracket, gender, education: User demographics.
 
-Inferred Tables (Based on Foreign Keys):
+Inferred tables (Based on Foreign Keys):
 users: ( id, ...other user attributes...) - Referenced extensively by final_profile_id.
 ad_campaigns: (campaign_id, ...campaign details...)
 ad_sub_campaigns: (sub_campaign_id, ...sub-campaign details...)
@@ -937,7 +934,7 @@ streams:(stream_id,..stream details...)
 
 
 
-Table: master_product_funnel_base
+Table: analytics.super.master_product_funnel_base
 Description: Contains data for tracking user activity through a product funnel, including app opens, signups, and various user actions.
 Columns:
 date_tz (DATE) - Date of the record.
@@ -973,3 +970,19 @@ Unique Values: 7, ["Don't Want To Disclose", "Don't Want to Disclose", "Female",
 education (STRING) - Education level of the user.
 Example: null
 Unique Values
+
+
+Key Improvements & Considerations for NL2SQL:
+Clear Naming: Use descriptive table and column names.
+Data Types: Ensure data types are correctly defined (e.g., DATE, TIMESTAMP, INT, DOUBLE, STRING, BOOLEAN).
+Relationships: Explicitly define relationships (one-to-many, many-to-many) using foreign keys. The inferred tables above are crucial.
+Contextual Information: Add descriptions to tables and columns to provide context for the NL2SQL model.
+Synonyms: Consider adding synonyms for column names (e.g., "cost" could also be "spend", "expense"). This helps the model understand different ways users might phrase the same concept.
+Normalization: Make sure that table is normalized.
+
+STRICT NOTE : use column names and value only which are present for a table.
+and for getting data for time use these 
+for month : date_trunc('month',date_tz)::date = '2025-01-01'
+for day : date_trunc('day',date_tz)::date = '2025-01-01'
+etc.
+
