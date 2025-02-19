@@ -5,8 +5,9 @@ from typing import List, Dict
 from api.config import get_chat_history_path, logger
 
 def save_chat_history(user_id: str, command: str, question: str, 
-                     sql_query: str = None, response: str = None,
-                     ai_response: str = None, graph_url: str = None) -> None:
+                     message_ts: str, sql_query: str = None, 
+                     response: str = None, ai_response: str = None, 
+                     graph_url: str = None) -> None:
     """Save chat history to JSON file"""
     try:
         history_file = get_chat_history_path(user_id)
@@ -20,6 +21,7 @@ def save_chat_history(user_id: str, command: str, question: str,
         # Add new entry
         history.append({
             'timestamp': datetime.utcnow().isoformat(),
+            'message_ts': message_ts,
             'command': command,
             'question': question,
             'sql_query': sql_query,

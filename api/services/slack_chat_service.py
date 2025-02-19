@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Dict, List, Optional, Tuple
 import json
 import logging
-from api.config import settings, langchain_service  # Add langchain_service import
+from api.config import settings, langchain_service, feedback_langchain_service  # Add langchain_service import
 from api.services.sql_service import SQLService
 from api.services.graph_service import GraphService
 from api.utils.message_utils import (
@@ -23,8 +23,8 @@ from api.handlers.history_handlers import save_chat_history, load_chat_history
 logger = logging.getLogger(__name__)
 
 class SlackChatService:
-    def __init__(self, db: Session, sql_service: SQLService, mongodb_service):
-        self.db = db
+    def __init__(self, sql_service: SQLService, mongodb_service):
+        logger.info("[CHAT] Initializing SlackChatService")
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.sql_service = sql_service
         self.mongodb_service = mongodb_service
@@ -89,9 +89,18 @@ Format your response in a clear, structured way:
         """Common method to prepare conversation context for all flows"""
         try:
             
-            # Load schema information
-            with open("static/db_structure.json", "r") as f:
-                db_structure = json.load(f)
+            # Load schema information from text file
+            try:
+                with open("static/db_structure.txt", "r") as f:
+                    db_structure = f.read().strip()
+                logger.debug("[CHAT] Loaded database structure from text file")
+            except FileNotFoundError:
+                logger.error("[CHAT] db_structure.txt not found")
+                db_structure = "No database structure available"
+            except Exception as e:
+                logger.error(f"[CHAT] Error reading db_structure.txt: {e}")
+                db_structure = "Error loading database structure"
+
             # Get relevant schema context from LangChain service
             schema_context = langchain_service.get_schema_context(new_question)
             logger.debug(f"[CONTEXT] Schema context: {schema_context[:200]}...")  # Log first 200 chars
@@ -99,9 +108,16 @@ Format your response in a clear, structured way:
             system_message = self.SYSTEM_PROMPTS.get(flow_type, self.SYSTEM_PROMPTS["sql"])
             
             # Add schema information
-            assistant_context = f"This is context to use Available tables and their columns:\n{json.dumps(db_structure, indent=2)}\n"
+            assistant_context = f"This is context to use. Available tables and their columns:\n{db_structure}\n"
             assistant_context += f"\n\nRelevant Database Schema Info from rag:\n{schema_context}\n"
 
+                        # Add similar feedback examples from the feedback index
+            similar_feedback = feedback_langchain_service.search_similar_feedback(new_question)
+            if (similar_feedback):
+                assistant_context += "\n\nSimilar examples from past queries:\n"
+                for i, feedback in enumerate(similar_feedback, 1):
+                    assistant_context += f"\nExample {i}:\n{feedback}\n"
+            logger.info(f"[CONTEXT] Similar feedback: {similar_feedback}")
             # Load user's chat history
             history = load_chat_history(user_id)
 
@@ -161,7 +177,7 @@ Format your response in a clear, structured way:
 
     async def process_graph_command(self, request: Dict[str, str], channel_id: str, message_ts: str) -> Dict[str, str]:
         """Process graph command to generate visualization"""
-        logger.info(f"Processing graph command for user: {request['user_id']} with question: {request['question']}")
+        # logger.info(f"Processing graph command for user: {request['user_id']} with question: {request['question']}")
         try:
             # Get AI response for query and visualization
             messages = self._prepare_conversation_context(
@@ -205,14 +221,18 @@ Format your response in a clear, structured way:
             )
 
             if not img_buffer:
+                logger.error("[GRAPH] Failed to generate visualization")
                 error_msg = "Failed to generate visualization"
                 send_error(channel_id, message_ts, {}, error_msg)
                 return {"error": error_msg}
+
+            logger.info("[GRAPH] Visualization generated successfully")
 
             # Send graph to Slack
             send_graph(channel_id, img_buffer, request["question"])
 
             # Save to MongoDB and get URL
+            logger.info("[GRAPH] Saving graph to MongoDB...")
             graph_url = self.graph_service.save_graph_to_mongodb(
                 img_buffer,
                 graph_filename,
@@ -222,8 +242,10 @@ Format your response in a clear, structured way:
             )
 
             if not graph_url:
-                logger.error("Failed to save graph to MongoDB")
+                logger.error("[GRAPH] Failed to save graph to MongoDB")
                 # Continue anyway since the graph was already sent to Slack
+            else:
+                logger.info(f"[GRAPH] Successfully saved graph to MongoDB. URL: {graph_url}")
 
             # Update final message with both SQL and visualization code
             formatted_response = {
@@ -234,15 +256,18 @@ Format your response in a clear, structured way:
             update_final_message(channel_id, message_ts, formatted_response)
 
             # Save to chat history with complete AI response
+            logger.info(f"[GRAPH] Saving to chat history with graph URL: {graph_url}")
             save_chat_history(
                 user_id=request["user_id"],
                 command="/graph",
                 question=request["question"],
+                message_ts=message_ts,
                 sql_query=sql_query,
                 response="Graph generated successfully",
                 ai_response=ai_response,  # Store complete AI response
                 graph_url=graph_url
             )
+            logger.info("[GRAPH] Successfully saved to chat history")
 
             return {
                 "text": "Graph generated successfully! ✨",
@@ -280,6 +305,7 @@ Format your response in a clear, structured way:
                 temperature=0.7
             )
             logger.info("[SQL] Received response from OpenAI")
+            logger.debug(f"[SQL] AI Response: {response.choices[0].message.content}")
 
             assistant_response = response.choices[0].message.content
             logger.info(f"[SQL] AI Response: {assistant_response}")
@@ -306,6 +332,7 @@ Format your response in a clear, structured way:
                 user_id=request["user_id"],
                 command="/sql",
                 question=request["question"],
+                message_ts=message_ts,
                 sql_query=sql_query,
                 ai_response=assistant_response
             )
@@ -317,7 +344,7 @@ Format your response in a clear, structured way:
             }
 
         except Exception as e:
-            logger.exception("[SQL] Unexpected error in process_sql_command")
+            logger.exception("[SQL] Error processing SQL command")
             error_msg = f"Error processing SQL command: {str(e)}"
             send_error(channel_id, message_ts, {}, error_msg)
             return {"error": error_msg}
@@ -361,6 +388,7 @@ Format your response in a clear, structured way:
 
             logger.info(f"[ASK] Generated SQL Query: {sql_query}")
 
+            logger.info("[ASK] Executing generated SQL query")
             # Execute query
             logger.info("[ASK] Executing SQL query")
             query_result, error = await self.sql_service.execute_query(sql_query)
@@ -372,21 +400,24 @@ Format your response in a clear, structured way:
 
             logger.info(f"[ASK] Query executed successfully. Rows: {len(query_result['rows']) if query_result else 0}")
 
-            # Format the response
-            formatted_response = format_query_result(query_result)
+            # Format the response with SQL query
+            formatted_response = {
+                "text": f"*SQL Query:*\n```sql\n{sql_query}\n```\n\n*Results:*\n{format_query_result(query_result)['text']}"
+            }
 
-            if formatted_response["type"] == "excel":
+            if format_query_result(query_result)["type"] == "excel":
                 # Send Excel file for large results
-                send_excel_file(channel_id, formatted_response["excel_file"], formatted_response["text"])
+                send_excel_file(channel_id, format_query_result(query_result)["excel_file"], formatted_response["text"])
             else:
                 # Update message with table for smaller results
-                update_final_message(channel_id, message_ts, {"text": formatted_response["text"]})
+                update_final_message(channel_id, message_ts, formatted_response)
 
             # Save to chat history
             save_chat_history(
                 user_id=request["user_id"],
                 command="/ask",
                 question=request["question"],
+                message_ts=message_ts,
                 sql_query=sql_query,
                 response="Query executed successfully",
                 ai_response=response.choices[0].message.content

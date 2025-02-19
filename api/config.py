@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     # LangChain settings
     USE_GPU_FAISS: bool = False
-    AUTO_REFRESH_SCHEMA: bool = True
+    AUTO_REFRESH_SCHEMA: bool = False
     INDEX_CHUNK_SIZE: int = 1000
     INDEX_CHUNK_OVERLAP: int = 200
 
@@ -80,4 +80,10 @@ langchain_service = LangChainService(
     auto_refresh=settings.AUTO_REFRESH_SCHEMA,
     chunk_size=settings.INDEX_CHUNK_SIZE,
     chunk_overlap=settings.INDEX_CHUNK_OVERLAP
+)
+
+feedback_langchain_service = LangChainService(
+    openai_api_key=settings.OPENAI_API_KEY,
+    use_gpu=False,
+    auto_refresh=settings.AUTO_REFRESH_SCHEMA
 )

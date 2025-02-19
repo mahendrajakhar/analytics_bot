@@ -6,7 +6,7 @@ from api.services.sql_service import SQLService
 from api.services.mongodb_service import mongodb_service
 from api.utils.message_utils import (
     send_initial_response, update_final_message, send_error, 
-    get_help_text, update_with_processing
+    get_help_text, update_with_processing, update_help_message, send_user_question_in_initial_response
 )
 
 # Define command constants
@@ -24,8 +24,9 @@ async def slack_command(request: Request, response_url: str):
         text = form_data.get("text", "").strip()
         user_id = form_data.get("user_id", "")
         channel_id = form_data.get("channel_id", "")
-        
-        initial_response = send_initial_response(channel_id)
+        send_user_question_in_initial_response(channel_id, text, command)
+        # Send initial response with the question
+        initial_response = send_initial_response(channel_id, text)
         message_ts = initial_response["ts"]
         
         update_with_processing(
@@ -39,7 +40,7 @@ async def slack_command(request: Request, response_url: str):
         
         if command == COMMAND_HELP or not text:
             help_text = get_help_text()
-            update_final_message(channel_id, message_ts, {"text": help_text})
+            update_help_message(channel_id, message_ts, {"text": help_text})
             return {"text": help_text}
             
         elif command == COMMAND_SQL:
@@ -65,7 +66,12 @@ async def slack_command(request: Request, response_url: str):
                 channel_id,
                 message_ts
             )
-            
+        
+        elif command == "/refresh-schema":
+            await chat_service.refresh_schema_index(channel_id, message_ts)
+            update_final_message(channel_id, message_ts, {"text": "Schema index refreshed!"})
+            return
+        
         else:
             error_msg = f"Unknown command: {command}"
             send_error(channel_id, message_ts, {}, error_msg)

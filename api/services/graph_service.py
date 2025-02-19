@@ -9,6 +9,7 @@ import json
 from openai import AsyncOpenAI
 from api.services.mongodb_service import MongoDBService
 from api.config import settings
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -20,13 +21,27 @@ class GraphService:
     async def generate_visualization_code(self, df: pd.DataFrame, question: str) -> Optional[str]:
         """Generate visualization code using AI"""
         try:
-            # Create a data description
-            data_info = {
+            # Convert DataFrame to JSON-serializable format
+            json_data = {
                 'columns': df.columns.tolist(),
                 'dtypes': df.dtypes.astype(str).to_dict(),
-                'sample_data': df.head(3).to_dict(orient='records'),
-                'shape': df.shape
+                'shape': df.shape,
+                'sample_data': []
             }
+
+            # Convert sample data to serializable format
+            sample_rows = []
+            for _, row in df.head(3).iterrows():
+                sample_row = {}
+                for col in df.columns:
+                    value = row[col]
+                    if isinstance(value, (datetime, pd.Timestamp)):
+                        sample_row[col] = value.strftime('%Y-%m-%d')
+                    else:
+                        sample_row[col] = str(value)
+                sample_rows.append(sample_row)
+            
+            json_data['sample_data'] = sample_rows
 
             # System prompt to guide the AI
             system_prompt = """You are an expert in data visualization using Python matplotlib and seaborn.
@@ -40,7 +55,22 @@ class GraphService:
             6. Use the exact column names provided
             7. Use 'df' as the variable name for the DataFrame
             8. NOT include any imports or plt.show()
-            The code will be executed in a context where pandas (pd), matplotlib.pyplot (plt), and seaborn (sns) are already imported."""
+            9. For date columns, use pd.to_datetime() to ensure proper date formatting
+
+            Example for time series data:
+            ```python
+            # Convert date column to datetime
+            df['date_column'] = pd.to_datetime(df['date_column'])
+            
+            # Create the plot
+            plt.plot(df['date_column'], df['value_column'], marker='o', linestyle='-', linewidth=2)
+            plt.title('Title Here')
+            plt.xlabel('Date')
+            plt.ylabel('Value')
+            plt.grid(True, alpha=0.3)
+            plt.xticks(rotation=45)
+            ```
+            """
 
             # Create the prompt
             messages = [
@@ -50,7 +80,7 @@ class GraphService:
                 Question: {question}
                 
                 DataFrame Info:
-                {json.dumps(data_info, indent=2)}
+                {json.dumps(json_data, indent=2)}
                 
                 Return ONLY the Python code without any explanation.
                 """}
@@ -130,9 +160,13 @@ class GraphService:
                            facecolor='white', edgecolor='none')
                 img_buffer.seek(0)
                 
+                # Save image to MongoDB
+                # graph_url = self.save_graph_to_mongodb(img_buffer.getvalue(), graph_filename, user_id, question, viz_code)
+                
                 # Clean up
                 plt.close('all')
                 return img_buffer.getvalue(), graph_filename
+                # return graph_url, viz_code
                 
             except Exception as e:
                 logger.error(f"Error executing visualization code: {e}")
@@ -148,6 +182,9 @@ class GraphService:
                              question: str, viz_code: str) -> Optional[str]:
         """Save graph to MongoDB and return URL"""
         try:
+            logger.info(f"[GRAPH] Saving graph to MongoDB. Filename: {graph_filename}")
+            logger.info(f"[GRAPH] Image buffer size: {len(img_buffer)} bytes")
+            
             # Save to MongoDB
             graph_doc = {
                 "user_id": user_id,
@@ -164,13 +201,16 @@ class GraphService:
                 logger.error("Failed to save graph to MongoDB")
                 return None
 
+            logger.info(f"[GRAPH] Successfully stored in MongoDB with ID: {graph_id}")
+
             # Construct full URL
             base_url = settings.BASE_URL.rstrip('/')
             graph_url = f"{base_url}/api/images/{graph_id}"
-            logger.info(f"Generated graph URL: {graph_url}")
+            logger.info(f"[GRAPH] Generated graph URL: {graph_url}")
 
             return graph_url
 
         except Exception as e:
-            logger.error(f"Error saving graph to MongoDB: {e}")
+            logger.error(f"[GRAPH] Error saving graph to MongoDB: {e}")
+            logger.exception("[GRAPH] Full traceback:")
             return None

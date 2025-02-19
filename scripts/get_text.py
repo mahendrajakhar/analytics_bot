@@ -2,7 +2,7 @@ import os
 
 def get_code_from_directory(root_dir, output_file):
     # Define directories and file extensions to ignore
-    ignore_dirs = {'venv', '__pycache__','.git','.idea','extra_files_not_for_this_project','.goose','static' }
+    ignore_dirs = {'venv', '__pycache__','.git','.idea','extra_files_not_for_this_project','.goose','static', "scripts" }
     ignore_files = {'tables_data_for_context.json','.cursorignore','.DS_Store','.csv', '.md', '.gitkeep', '.yml', '.txt', '.cfg', '__init__.py','get_text.py','pytest.ini','Makefile','pyproject.toml','.gitignore','.env'}
 
     # Open the output file where we'll store the results

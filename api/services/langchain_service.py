@@ -1,5 +1,5 @@
 import os
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -18,18 +18,23 @@ class LangChainService:
         """Initialize LangChain service with configuration options"""
         self.embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
         self.vectorstore = None
+        self.feedback_vectorstore = None
         self.use_gpu = use_gpu
         self.auto_refresh = auto_refresh
         self.last_refresh = None
-        self.refresh_interval = timedelta(hours=1)  # Refresh index if older than 1 hour
+        self.refresh_interval = timedelta(hours=1)
         
+        # Text splitter for schema documents only
         self.text_splitter = CharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
             separator="\n"
         )
+        
         self.tables_dir = "static/tables"
+        self.feedback_dir = "static/feedback"
         self._setup_vector_store()
+        self._setup_feedback_store()
 
     def _get_schema_files(self) -> Dict[str, List[str]]:
         """Get all schema files from the tables directory"""
@@ -212,3 +217,132 @@ class LangChainService:
         except Exception as e:
             logger.error(f"Error refreshing schema: {e}")
             raise
+
+    def _setup_feedback_store(self):
+        """Set up or load the feedback vector store"""
+        try:
+            index_path = "static/faiss_feedback_index"
+            
+            if os.path.exists(index_path):
+                try:
+                    # Load existing vector store
+                    self.feedback_vectorstore = FAISS.load_local(
+                        index_path,
+                        self.embeddings
+                    )
+                    logger.info("[FEEDBACK_INDEX] Loaded existing feedback vector store")
+                    return
+                except Exception as e:
+                    logger.warning(f"[FEEDBACK_INDEX] Failed to load existing index: {e}")
+
+            # Create new vector store from existing feedback
+            feedback_texts = self._load_feedback_texts()
+            if not feedback_texts:
+                logger.info("[FEEDBACK_INDEX] No existing feedback to index")
+                return
+
+            # Each feedback entry is one document (no chunking)
+            docs = [Document(page_content=t) for t in feedback_texts]
+            
+            # Create vector store
+            self.feedback_vectorstore = FAISS.from_documents(
+                docs, 
+                self.embeddings
+            )
+            
+            # Save index
+            os.makedirs("static/faiss_feedback_index", exist_ok=True)
+            self.feedback_vectorstore.save_local(index_path)
+            logger.info("[FEEDBACK_INDEX] Created new feedback vector store")
+
+        except Exception as e:
+            logger.error(f"[FEEDBACK_INDEX] Error setting up feedback store: {e}")
+            raise
+
+    def _load_feedback_texts(self) -> List[str]:
+        """Load all feedback from JSON files"""
+        try:
+            feedback_texts = []
+            
+            # Get all feedback JSON files
+            feedback_files = glob.glob(os.path.join(self.feedback_dir, "positive_*_feedback.json"))
+            
+            for file_path in feedback_files:
+                try:
+                    with open(file_path, 'r') as f:
+                        feedback_list = json.load(f)
+                        for feedback in feedback_list:
+                            # Create searchable text from feedback
+                            feedback_text = f"""
+                            Command: {feedback.get('command_type', 'unknown')}
+                            Question: {feedback.get('question', '')}
+                            SQL Query: {feedback.get('sql_query', '')}
+                            Response: {feedback.get('response', '')}
+                            AI Response: {feedback.get('ai_response', '')}
+                            """
+                            if 'visualization_code' in feedback:
+                                feedback_text += f"\nVisualization Code: {feedback['visualization_code']}"
+                            
+                            feedback_texts.append(feedback_text.strip())
+                            
+                except Exception as e:
+                    logger.error(f"[FEEDBACK_INDEX] Error loading feedback file {file_path}: {e}")
+                    continue
+            
+            return feedback_texts
+
+        except Exception as e:
+            logger.error(f"[FEEDBACK_INDEX] Error loading feedback texts: {e}")
+            return []
+
+    async def add_feedback_to_index(self, feedback_entry: Dict[str, Any]):
+        """Add new feedback to the vector store"""
+        try:
+            # Create searchable text from feedback
+            feedback_text = f"""
+            Command: {feedback_entry.get('command_type', 'unknown')}
+            Question: {feedback_entry.get('question', '')}
+            AI Response: {feedback_entry.get('ai_response', '')}
+            """
+            # if 'visualization_code' in feedback_entry:
+            #     feedback_text += f"\nVisualization Code: {feedback_entry['visualization_code']}"
+            
+            # Create document
+            doc = Document(page_content=feedback_text.strip())
+            
+            # Add to vector store
+            if self.feedback_vectorstore is None:
+                self._setup_feedback_store()
+            
+            if self.feedback_vectorstore is not None:
+                self.feedback_vectorstore.add_documents([doc])
+                
+                # Save updated index
+                self.feedback_vectorstore.save_local("static/faiss_feedback_index")
+                logger.info("[FEEDBACK_INDEX] Added new feedback to index")
+            else:
+                logger.error("[FEEDBACK_INDEX] Feedback vector store not initialized")
+                
+        except Exception as e:
+            logger.error(f"[FEEDBACK_INDEX] Error adding feedback to index: {e}")
+            logger.exception("[FEEDBACK_INDEX] Full traceback:")
+
+    def search_similar_feedback(self, query: str, max_results: int = 3) -> List[str]:
+        """Search for similar feedback entries"""
+        try:
+            if not self.feedback_vectorstore:
+                logger.warning("[FEEDBACK_INDEX] Feedback vector store not initialized")
+                return []
+
+            # Search for similar feedback
+            docs = self.feedback_vectorstore.similarity_search(
+                query, 
+                k=max_results,
+                fetch_k=max_results * 4
+            )
+            
+            return [doc.page_content for doc in docs]
+
+        except Exception as e:
+            logger.error(f"[FEEDBACK_INDEX] Error searching feedback: {e}")
+            return []

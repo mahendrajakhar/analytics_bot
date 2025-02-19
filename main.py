@@ -1,9 +1,10 @@
 # main.py
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from bson.objectid import ObjectId
 import matplotlib
+import json
 
 from api.config import settings, logger
 from api.services.mongodb_service import mongodb_service
@@ -33,6 +34,19 @@ async def get_image(image_id: str):
     except Exception as e:
         logger.error(f"Error serving image: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/slack/events")
+async def slack_events(request: Request):
+    data = await request.json()
+    
+    # If Slack sends a challenge, respond with it
+    if "challenge" in data:
+        return {"challenge": data["challenge"]}
+    
+    # Handle other event types here
+    return {"status": "ok"}
+
 
 if __name__ == "__main__":
     import uvicorn

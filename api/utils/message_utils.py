@@ -159,12 +159,79 @@ def format_query_result(query_result: Dict[str, Any]) -> Dict[str, Any]:
             "type": "text"
         }
 
-def send_initial_response(channel_id: str) -> dict:
-    """Send initial 'processing' message"""
+def send_user_question_in_initial_response(channel_id: str, question: str, command: str) -> dict:
+    """Send initial response with stylized user question"""
     try:
+        # Create a stylized question block with command context
+        command_emoji = {
+            "/sql": "🔍",
+            "/ask": "💡",
+            "/graph": "📊",
+            "/help": "ℹ️"
+        }.get(command, "❓")
+        
+        blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"```{command} {command_emoji} {question}```"
+                }
+            },
+            {
+                "type": "divider"
+            }
+        ]
+
+        # Send the message
         response = slack_client.chat_postMessage(
             channel=channel_id,
-            text="Processing your request... 🧠"
+            text=f"Question: {question}",
+            blocks=blocks
+        )
+        
+        if not response["ok"]:
+            logger.error(f"Error sending initial response: {response.get('error')}")
+            raise Exception(f"Failed to send initial response: {response.get('error')}")
+            
+        return response
+
+    except Exception as e:
+        logger.error(f"Error sending initial response: {e}")
+        # Send a simpler fallback message
+        try:
+            return slack_client.chat_postMessage(
+                channel=channel_id,
+                text=f"Processing: {question}"
+            )
+        except Exception as fallback_error:
+            logger.error(f"Error sending fallback message: {fallback_error}")
+            raise
+
+def send_initial_response(channel_id: str, question: str) -> dict:
+    """Send initial 'processing' message with user's question"""
+    try:
+        blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Question:*\n{question}"
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Processing your request... 🧠"
+                }
+            }
+        ]
+        
+        response = slack_client.chat_postMessage(
+            channel=channel_id,
+            text=f"Question: {question}\nProcessing...",
+            blocks=blocks
         )
         return response
     except Exception as e:
@@ -230,7 +297,7 @@ def send_graph(channel_id: str, img_buffer: bytes, text: str):
         raise
 
 def update_final_message(channel_id: str, ts: str, formatted_response: dict):
-    """Update final message after graph upload"""
+    """Update final message with feedback buttons"""
     try:
         # Create blocks array
         blocks = []
@@ -247,24 +314,42 @@ def update_final_message(channel_id: str, ts: str, formatted_response: dict):
         
         # Add image block if graph_url is present
         if formatted_response.get("graph_url"):
-            blocks = [
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": formatted_response['text']
-                }
-            },
-            {
+            blocks.append({
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
                     "text": "Visualization complete! ✨"
                 }
-            }
-        ]
+            })
+
+        # Add feedback buttons
+        blocks.append({
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "👍 Helpful",
+                        "emoji": True
+                    },
+                    "value": "thumbs_up",
+                    "action_id": "feedback_helpful"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "👎 Not Helpful",
+                        "emoji": True
+                    },
+                    "value": "thumbs_down",
+                    "action_id": "feedback_not_helpful"
+                }
+            ]
+        })
         
-        # Update the message with text only
+        # Update the message
         response = slack_client.chat_update(
             channel=channel_id,
             ts=ts,
@@ -283,12 +368,12 @@ def update_final_message(channel_id: str, ts: str, formatted_response: dict):
             slack_client.chat_update(
                 channel=channel_id,
                 ts=ts,
-                text="Query completed. Check the visualization above! 📊",
+                text="Query completed",
                 blocks=[{
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": "Query completed. Check the visualization above! 📊"
+                        "text": "Query completed"
                     }
                 }]
             )
@@ -397,3 +482,25 @@ Examples:
 • `/ask What were the top 5 products sold last month?`
 • `/graph Show me a bar chart of monthly revenue`
 """
+
+def update_help_message(channel_id: str, ts: str, formatted_response: dict):
+    """Update help message without feedback buttons"""
+    try:
+        # Update the message
+        response = slack_client.chat_update(
+            channel=channel_id,
+            ts=ts,
+            text=formatted_response["text"],
+            blocks=[]
+        )
+        
+        if not response["ok"]:
+            logger.error(f"Error updating help message: {response.get('error')}")
+            raise Exception(f"Failed to update help message: {response.get('error')}")
+            
+    except Exception as e:
+        logger.error(f"Error updating help message: {e}")
+        try: send_error(channel_id, ts, formatted_response, "Error updating help message")
+        except Exception as fallback_error:
+            logger.error(f"Error sending fallback help message: {fallback_error}")
+            raise

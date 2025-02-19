@@ -1,0 +1,8 @@
+[
+  {
+    "timestamp": "2025-02-18T10:32:54.385996",
+    "user_id": "U07867XKY22",
+    "user_question": "generate a graph for average listening minutes of active users in last week on day to day basis",
+    "sql_query": "SELECT \n    DATE(date_tz) AS listening_date,\n    AVG(mins_listened) AS average_minutes_listened\nFROM \n    analytics.super.raw_listening_impression_combined_show_level\nWHERE \n    final_profile_id IN (\n        SELECT final_profile_id \n        FROM analytics.super.premium_user_all_orders \n        WHERE subscription_status = 'active'\n    )\n    AND date_tz >= CURRENT_DATE - INTERVAL '7 days'\n    AND date_tz < CURRENT_DATE\nGROUP BY \n    listening_date\nORDER BY \n    listening_date;"
+  }
+]
