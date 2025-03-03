@@ -1,0 +1,84 @@
+Table: analytics.super.renewal_summary
+Description: Comprehensive tracking of subscription renewals, user engagement metrics, and cancellation patterns across different platforms, languages, and subscription types. This table helps analyze factors affecting renewal rates and churn.
+Business teams likely use this to optimize renewal rates, reduce cancellations, and identify engagement thresholds that correlate with higher retention.
+
+primary key: A composite key of `date_tz`, `monetization_platform`, `plan_id`, and `payment_gateway` would likely create uniqueness, possibly with additional dimensions like `monetization_language` and `user_age`.
+
+Foreign Keys (Potential/Inferred)
+`plan_id` -> plans.id
+Foreign keys to dimension tables for platform, language, channel, etc.
+
+Relationships
+One-to-many with inferred plans table
+Many-to-many with inferred user segments
+Many-to-many with inferred payment gateways
+
+Implicit/Joinable Fields
+date_tz: Date for time-series analysis
+monetization_platform, monetization_language, monetization_channel, monetization_country: Platform and marketing dimensions
+plan_flag, plan_id, payment_gateway: Subscription and payment dimensions  
+Engagement metrics: listening_min_last_7_days, listening_min_last_30_days, etc.
+
+Columns:
+mod_10 (INT) - Modulo 10 value, likely for sampling. Example: 7. Unique Values: 10, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+date_tz (DATE) - Date of the renewal record. Example: "2023-02-25". Unique Values: 2,674
+
+data_type (STRING) - Type of date reference (Plan Start Date or Plan End Date). Example: "Plan End Date". Unique Values: 2, ["Plan End Date", "Plan Start Date"]
+
+monetization_platform (STRING) - Platform where the subscription exists. Example: "KukuFM Android App". Unique Values: 16, ["KukuFM Android App", "KukuFM Android Bhakti App", "KukuFM Android Kannada App", "KukuFM Android Love App", "KukuFM Android Tamil App", "KukuFM Android Telugu App", "KukuFM Android Udaan App", "KukuFM IOS App", "KukuFM USA Android App", "KukuFM Web", "KukuGuru Android Hindi App", "KukuGuru Android Tamil App", "KukuTV Android App", "KukuTV Android Telugu App", "KukuTV IOS App", "KukuTV US Android App"]
+
+monetization_language (STRING) - Language associated with the subscription. Example: "hindi". Unique Values: 15, ["bengali", "english", "english-us", "gujarati", "hindi", "kannada", "korean", "malayalam", "marathi", "oriya", "other_language", "punjabi", "tamil", "telugu", "urdu"]
+
+monetization_channel (STRING) - Marketing channel where user was acquired. Example: "Organic". Unique Values: 18, ["DV360", "IG", "Legacy Partnerships", "Moloco", "Organic", "Snapchat", "YT", "agency", "apple", "facebook", "google", "internal-others", "ios-search-ads", "null", "partnership", "paytm", "sharechat", "unity"]
+
+monetization_country (STRING) - Country dimension for monetization. Example: "Overall". Unique Values: 1, ["Overall"]
+
+plan_flag (STRING) - Type of subscription plan. Example: "Annual". Unique Values: 5, ["Annual", "Monthly", "Others", "Quarterly", "Weekly"]
+
+plan_id (INT) - Specific plan identifier. Example: 1. Unique Values: 32, [values include 1, 2, 3, ..., 505]
+
+b2c_type (STRING) - Business-to-consumer category. Example: "All". Unique Values: 1, ["All"]
+
+payment_gateway (STRING) - Payment processor used. Example: "razorpay". Unique Values: 9, ["apple_in_app", "google_play_in_app", "juspay", "paytm", "paytm_recurring", "paytm_sdk_one_time", "phonepe", "razorpay", "simpl"]
+
+subs_type (STRING) - Type of subscription (trial or direct). Example: "Non-Trial". Unique Values: 3, ["Non-Trial", "Trial-Cohort", "Trial-Conversion"]
+
+user_age (STRING) - Age of the user subscription. Example: "A0". Unique Values: 21, ["A0", "A1", "A2", "A2+", "Annual", "M0", "M1", "M2", "M3", "M4", "M5", "M5+", "Monthly", "Others", "Q0", "Q1", "Q2", "Q3", "Q4+", "Quarterly", "Weekly"]
+
+listening_min_last_7_days (STRING) - Listening minutes in last 7 days (categorized). Example: "<10 Mins". Unique Values: 6, ["10-60 Mins", "120-240 Mins", "60-120 Mins", "<10 Mins", ">240 Mins", "not_listened"]
+
+listening_min_last_30_days (STRING) - Listening minutes in last 30 days (categorized). Example: "<10 Mins". Unique Values: 6, ["10-60 Mins", "120-240 Mins", "60-120 Mins", "<10 Mins", ">240 Mins", "not_listened"]
+
+listen_days_7_days (STRING) - Days with listening activity in last 7 days (categorized). Example: "None". Unique Values: 4, ["1 Day", "2-3 Day", "4+ Day", "None"]
+
+listen_days_30_days (STRING) - Days with listening activity in last 30 days (categorized). Example: "1 Day". Unique Values: 4, ["1 Day", "2-6 Day", "7+ Day", "None"]
+
+listen_7_days (DECIMAL) - Exact minutes listened in last 7 days. Example: "0.000000". Unique Values: 505,379
+
+listen_30_days (DECIMAL) - Exact minutes listened in last 30 days. Example: "8.333333". Unique Values: 952,602
+
+user_base (LONG) - Count of users in the segment. Example: 5. Unique Values: 742
+
+renewed_users (LONG) - Count of users who renewed. Example: 4. Unique Values: 417
+
+reactivated_users (LONG) - Count of users who reactivated after a lapse. Example: 0. Unique Values: 43, [0, 1, 2, 3, ..., 46]
+
+ANR (LONG) - Auto Non-Renewals, subscriptions that didn't auto-renew. Example: 0. Unique Values: 597
+
+mandate_cancelled (LONG) - Count of payment mandates cancelled. Example: 0. Unique Values: 169
+
+D0_mandate_cancelled (LONG) - Count of mandates cancelled on day 0. Example: 0. Unique Values: 89
+
+D1_mandate_cancelled (LONG) - Count of mandates cancelled on day 1. Example: 0. Unique Values: 42, [0, 1, 2, 3, ..., 50]
+
+D_last_mandate_cancelled (LONG) - Count of mandates cancelled on the last day. Example: 0. Unique Values: 109
+
+Key Metrics and Business Usage
+This table appears critical for analyzing subscription renewal patterns and factors affecting retention. It combines:
+
+1. Renewal/Churn Metrics: Track renewed users, ANR (auto non-renewals), and mandate cancellations
+2. Engagement Correlation: Link listening behavior with renewal likelihood
+3. Segmentation Analysis: Compare performance across platforms, languages, payment methods
+4. Subscription Lifecycle: Track user behavior by subscription age and type
+

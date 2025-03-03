@@ -2,16 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import io
-import logging
 import uuid
 from typing import Optional, Dict, Any, Tuple
 import json
 from openai import AsyncOpenAI
 from api.services.mongodb_service import MongoDBService
-from api.config import settings
+from api.config import settings, logger
 from datetime import datetime
-
-logger = logging.getLogger(__name__)
 
 class GraphService:
     def __init__(self, mongodb_service: MongoDBService):
@@ -96,7 +93,6 @@ class GraphService:
 
             # Parse AI response
             visualization_code = response.choices[0].message.content.strip()
-            logger.info(f"Generated visualization code:\n{visualization_code}")
 
             # Clean up the code
             visualization_code = visualization_code.replace('```python', '').replace('```', '').strip()
@@ -112,10 +108,6 @@ class GraphService:
         try:
             # Convert query result to DataFrame
             df = pd.DataFrame(query_result['rows'], columns=query_result['columns'])
-            
-            logger.info(f"DataFrame shape: {df.shape}")
-            logger.info(f"DataFrame columns: {df.columns.tolist()}")
-            logger.info(f"DataFrame head:\n{df.head()}")
             
             if df.empty:
                 logger.error("Empty DataFrame")
@@ -182,9 +174,6 @@ class GraphService:
                              question: str, viz_code: str) -> Optional[str]:
         """Save graph to MongoDB and return URL"""
         try:
-            logger.info(f"[GRAPH] Saving graph to MongoDB. Filename: {graph_filename}")
-            logger.info(f"[GRAPH] Image buffer size: {len(img_buffer)} bytes")
-            
             # Save to MongoDB
             graph_doc = {
                 "user_id": user_id,
@@ -201,16 +190,11 @@ class GraphService:
                 logger.error("Failed to save graph to MongoDB")
                 return None
 
-            logger.info(f"[GRAPH] Successfully stored in MongoDB with ID: {graph_id}")
-
             # Construct full URL
             base_url = settings.BASE_URL.rstrip('/')
             graph_url = f"{base_url}/api/images/{graph_id}"
-            logger.info(f"[GRAPH] Generated graph URL: {graph_url}")
-
             return graph_url
 
         except Exception as e:
             logger.error(f"[GRAPH] Error saving graph to MongoDB: {e}")
-            logger.exception("[GRAPH] Full traceback:")
             return None

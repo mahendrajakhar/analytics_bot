@@ -5,11 +5,12 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.docstore.document import Document
 import json
-import logging
 import glob
 from datetime import datetime, timedelta
+import logging
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class LangChainService:
     def __init__(self, openai_api_key: str, use_gpu: bool = False, 

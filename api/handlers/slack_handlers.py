@@ -1,4 +1,3 @@
-import logging
 from fastapi import Request, HTTPException
 from api.config import settings, logger  # Remove get_db import
 from api.services.slack_chat_service import SlackChatService

@@ -11,19 +11,15 @@ os.makedirs(FEEDBACK_DIR, exist_ok=True)
 async def process_feedback(payload: Dict[str, Any]) -> Dict[str, str]:
     """Process feedback from Slack interactive components"""
     try:
-        logger.info("[FEEDBACK] Processing feedback request")
         
         # Get action details
         action_id = payload.get("actions", [{}])[0].get("action_id")
-        logger.info(f"[FEEDBACK] Action ID: {action_id}")
         
         if action_id == "feedback_helpful":
             # Get message details from payload
             message = payload.get("message", {})
             user = payload.get("user", {})
             message_ts = message.get("ts", "")
-            
-            logger.info(f"[FEEDBACK] Processing positive feedback from user: {user.get('id')}")
             
             # Load chat history to determine command type
             history = load_chat_history(user.get("id"))
@@ -33,19 +29,15 @@ async def process_feedback(payload: Dict[str, Any]) -> Dict[str, str]:
             for entry in reversed(history):
                 if entry.get("message_ts") == message_ts:
                     history_entry = entry
-                    logger.info("[FEEDBACK] Found matching history entry")
                     break
             
             if not history_entry:
-                logger.error(f"[FEEDBACK] No history entry found for message_ts: {message_ts}")
                 return {"text": "Could not process feedback. History entry not found."}
             
             # Get command type from history entry
             command_type = history_entry.get("command")
             if not command_type:
-                logger.info("[FEEDBACK] No command type found in history entry, skipping feedback")
                 return {"text": "Could not process feedback. Command type not found."}
-            logger.info(f"[FEEDBACK] Found command type from history: {command_type}")
             
             # Prepare feedback data
             feedback_data = {

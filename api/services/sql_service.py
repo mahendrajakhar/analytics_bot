@@ -103,7 +103,6 @@ class SQLService:
                     corrected_query = await self.resolve_sql_error(error_msg, sql_query, user_question)
                     
                     if corrected_query and corrected_query != sql_query:
-                        logger.info("Retrying with corrected query")
                         return await self.execute_query(corrected_query, user_question, retry_count + 1)
                     else:
                         logger.info("Could not generate corrected query or same query returned")
