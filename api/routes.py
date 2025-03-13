@@ -39,8 +39,9 @@ async def handle_interactivity(request: Request):
         logger.info(f"[form_data] Received command request: {form_data}")
         payload = json.loads(form_data.get("payload", "{}"))
         
-        # Process feedback through centralized handler
-        return process_feedback(payload)
+        # Process feedback through centralized handler and await the result
+        result = await process_feedback(payload)
+        return result
             
     except Exception as e:
         logger.error(f"[INTERACTIVITY] Error handling interactivity: {e}")

@@ -88,76 +88,127 @@ def format_query_result(query_result: Dict[str, Any]) -> Dict[str, Any]:
         if not query_result or not query_result.get('rows'):
             return {"text": "No results found.", "type": "text"}
 
+        # Convert to DataFrame for easier handling
         df = pd.DataFrame(query_result['rows'], columns=query_result['columns'])
         
-        # Convert timezone-aware datetime columns
-        df = convert_timezone_aware_columns(df)
-        
+        # Format columns based on name and content
+        for col in df.columns:
+            # Check if column is an ID field
+            is_id_field = any(id_term in col.lower() for id_term in ['_id', 'id_', 'id'])
+            
+            # Format based on column type and name
+            if df[col].dtype == 'datetime64[ns]' or 'datetime' in str(df[col].dtype).lower():
+                # Format datetime without timezone
+                df[col] = df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+            elif 'date' in col.lower():
+                # Try to convert string dates to proper format
+                try:
+                    df[col] = pd.to_datetime(df[col]).dt.strftime('%Y-%m-%d')
+                except:
+                    pass
+            elif is_id_field:
+                # Handle ID columns - convert to integer without formatting
+                df[col] = df[col].apply(lambda x: str(int(float(x))) if pd.notnull(x) and str(x).strip() else '')
+            elif df[col].dtype in ['int64', 'float64']:
+                # Format other numeric columns with thousand separators
+                df[col] = df[col].apply(lambda x: f"{x:,}" if pd.notnull(x) else '')
+            
+            # Ensure all values are strings and handle None/NaN
+            df[col] = df[col].fillna('').astype(str)
+
         total_rows = len(df)
         total_cols = len(df.columns)
         
-        # For results within limits, return as code block
+        # For results within limits, return as formatted table
         if total_rows <= TableHandler.MAX_ROWS and total_cols <= TableHandler.MAX_COLUMNS:
-            # Format datetime columns for display
-            for col in df.select_dtypes(include=['datetime64']).columns:
-                df[col] = df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+            # Create formatted table string
+            table_str = "```\n"
             
-            table_str = df.to_string(index=False)
+            # Add headers with proper spacing
+            col_widths = {col: max(len(str(col)), df[col].str.len().max()) 
+                         for col in df.columns}
+            
+            # Format header
+            header = " | ".join(f"{col:<{col_widths[col]}}" for col in df.columns)
+            separator = "-" * len(header)
+            
+            table_str += f"{header}\n{separator}\n"
+            
+            # Format rows
+            for _, row in df.iterrows():
+                formatted_row = " | ".join(f"{str(val):<{col_widths[col]}}" 
+                                         for col, val in row.items())
+                table_str += f"{formatted_row}\n"
+            
+            table_str += "```"
+            
             return {
-                "text": f"Query returned {total_rows} rows and {total_cols} columns:\n```{table_str}```",
+                "text": f"Query returned {total_rows} rows and {total_cols} columns:\n{table_str}",
                 "type": "text"
             }
         
         # For larger results, create Excel file
-        # Calculate sheets needed (max 1M rows per sheet)
-        MAX_ROWS_PER_SHEET = 1000000
-        total_sheets = math.ceil(total_rows / MAX_ROWS_PER_SHEET)
+        excel_buffer = io.BytesIO()
         
-        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as temp_file:
-            if total_sheets == 1:
-                # Single sheet case
-                df.to_excel(temp_file.name, index=False, sheet_name='Results')
-            else:
-                # Multiple sheets case
-                with pd.ExcelWriter(temp_file.name, engine='xlsxwriter') as writer:
-                    for i in range(total_sheets):
-                        start_idx = i * MAX_ROWS_PER_SHEET
-                        end_idx = min((i + 1) * MAX_ROWS_PER_SHEET, total_rows)
-                        sheet_name = f'Results_Part_{i+1}'
-                        
-                        # Get the slice of data for this sheet
-                        sheet_df = df.iloc[start_idx:end_idx].copy()
-                        
-                        sheet_df.to_excel(
-                            writer, 
-                            sheet_name=sheet_name,
-                            index=False
-                        )
-                        
-                        # Optional: Adjust column widths for better readability
-                        worksheet = writer.sheets[sheet_name]
-                        for idx, col in enumerate(sheet_df.columns):
-                            max_length = max(
-                                sheet_df[col].astype(str).str.len().max(),
-                                len(str(col))
-                            )
-                            worksheet.set_column(idx, idx, min(max_length + 2, 50))
+        # Create Excel writer with xlsxwriter engine for better formatting
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Results', index=False)
+            
+            # Get workbook and worksheet objects
+            workbook = writer.book
+            worksheet = writer.sheets['Results']
+            
+            # Add formats
+            header_format = workbook.add_format({
+                'bold': True,
+                'bg_color': '#D7E4BC',
+                'border': 1,
+                'text_wrap': True
+            })
+            
+            # Auto-fit columns
+            for idx, col in enumerate(df.columns):
+                max_length = max(
+                    df[col].astype(str).str.len().max(),
+                    len(str(col))
+                ) + 2
+                worksheet.set_column(idx, idx, min(max_length, 50))
+                
+                # Write headers with format
+                worksheet.write(0, idx, col, header_format)
+
+        excel_buffer.seek(0)
+        
+        # Create preview of data
+        preview_df = df.head(5)
+        preview_str = "```\n"
+        
+        # Format preview headers
+        preview_col_widths = {col: max(len(str(col)), preview_df[col].str.len().max()) 
+                            for col in preview_df.columns}
+        preview_header = " | ".join(f"{col:<{preview_col_widths[col]}}" 
+                                  for col in preview_df.columns)
+        preview_separator = "-" * len(preview_header)
+        
+        preview_str += f"{preview_header}\n{preview_separator}\n"
+        
+        # Format preview rows
+        for _, row in preview_df.iterrows():
+            formatted_row = " | ".join(f"{str(val):<{preview_col_widths[col]}}" 
+                                     for col, val in row.items())
+            preview_str += f"{formatted_row}\n"
+        
+        preview_str += f"```\n(Showing 5 of {total_rows} rows)"
 
         return {
-            "text": (f"Query returned {total_rows} rows and {total_cols} columns. "
-                    f"Due to size (>30 rows or >10 columns), data has been exported to Excel "
-                    f"and split into {total_sheets} sheet{'s' if total_sheets > 1 else ''}."),
+            "text": preview_str,
             "type": "excel",
-            "excel_file": temp_file.name
+            "excel_file": excel_buffer
         }
 
     except Exception as e:
         logger.error(f"Error formatting query result: {e}")
-        logger.exception("Full traceback:")  # Add full traceback logging
-        return {
-            "text": f"Error creating result format: {str(e)}",
-            "type": "text"
-        }
+        return {"text": f"Error formatting results: {str(e)}", "type": "text"}
 
 def send_user_question_in_initial_response(channel_id: str, question: str, command: str) -> dict:
     """Send initial response with stylized user question"""
@@ -322,7 +373,7 @@ def update_final_message(channel_id: str, ts: str, formatted_response: dict):
                 }
             })
 
-        # Add feedback buttons
+        # Add feedback and summarize buttons
         blocks.append({
             "type": "actions",
             "elements": [
@@ -345,6 +396,16 @@ def update_final_message(channel_id: str, ts: str, formatted_response: dict):
                     },
                     "value": "thumbs_down",
                     "action_id": "feedback_not_helpful"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "📝 Summarize",
+                        "emoji": True
+                    },
+                    "value": "summarize",
+                    "action_id": "summarize"
                 }
             ]
         })
@@ -394,16 +455,87 @@ def send_error(channel_id: str, ts: str, formatted_response: dict, error: str):
         logger.error(f"Error sending error message: {e}")
         raise
 
-def send_excel_file(channel_id: str, excel_buffer: io.BytesIO, preview: str):
+def send_excel_file(channel_id: str, excel_buffer: io.BytesIO, preview: str, history_entry: dict = None):
     """Send Excel file with preview"""
     try:
-        return slack_client.files_upload_v2(
+        file_response = slack_client.files_upload_v2(
             channel=channel_id,
             file=excel_buffer,
             title="Query Results",
             filename="query_results.xlsx",
             initial_comment=f"Here are your query results:\n```\n{preview}\n```"
         )
+        
+        # Then send a follow-up message with buttons
+        blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Excel file has been uploaded with the query results."
+                }
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "👍 Helpful",
+                            "emoji": True
+                        },
+                        "value": "thumbs_up",
+                        "action_id": "feedback_helpful"
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "👎 Not Helpful",
+                            "emoji": True
+                        },
+                        "value": "thumbs_down",
+                        "action_id": "feedback_not_helpful"
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "📝 Summarize",
+                            "emoji": True
+                        },
+                        "value": "summarize",
+                        "action_id": "summarize"
+                    }
+                ]
+            }
+        ]
+        
+        # Send follow-up message with buttons
+        button_response = slack_client.chat_postMessage(
+            channel=channel_id,
+            text="Excel file has been uploaded with the query results.",
+            blocks=blocks
+        )
+
+        # If we have a history entry, update it with the new message timestamp
+        if history_entry and button_response['ok']:
+            from api.handlers.history_handlers import save_chat_history
+            
+            # Create a new history entry with the button message timestamp
+            save_chat_history(
+                user_id=history_entry['user_id'],
+                command=history_entry['command'],
+                question=history_entry['question'],
+                message_ts=button_response['ts'],  # Use the new message timestamp
+                sql_query=history_entry.get('sql_query'),
+                response=history_entry.get('response'),
+                ai_response=history_entry.get('ai_response')
+            )
+        
+        return file_response
+        
     except Exception as e:
         logger.error(f"Error sending Excel file: {e}")
         raise

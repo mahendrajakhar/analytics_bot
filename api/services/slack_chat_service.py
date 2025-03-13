@@ -356,8 +356,24 @@ Format your response in a clear, structured way:
             }
 
             if format_query_result(query_result)["type"] == "excel":
-                # Send Excel file for large results
-                send_excel_file(channel_id, format_query_result(query_result)["excel_file"], formatted_response["text"])
+                # Create history entry
+                history_entry = {
+                    'user_id': request["user_id"],
+                    'command': "/ask",
+                    'question': request["question"],
+                    'message_ts': message_ts,
+                    'sql_query': sql_query,
+                    'response': format_query_result(query_result)["text"],
+                    'ai_response': response.choices[0].message.content
+                }
+                
+                # Send Excel file with history entry
+                send_excel_file(
+                    channel_id, 
+                    format_query_result(query_result)["excel_file"], 
+                    formatted_response["text"],
+                    history_entry
+                )
             else:
                 # Update message with table for smaller results
                 update_final_message(channel_id, message_ts, formatted_response)

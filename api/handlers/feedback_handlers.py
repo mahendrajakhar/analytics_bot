@@ -4,6 +4,8 @@ from datetime import datetime
 from typing import Dict, Any
 from api.config import logger, feedback_langchain_service
 from api.handlers.history_handlers import load_chat_history
+from openai import AsyncOpenAI
+from api.config import settings
 
 FEEDBACK_DIR = "static/feedback"
 os.makedirs(FEEDBACK_DIR, exist_ok=True)
@@ -15,12 +17,12 @@ async def process_feedback(payload: Dict[str, Any]) -> Dict[str, str]:
         # Get action details
         action_id = payload.get("actions", [{}])[0].get("action_id")
         
+        # Get message details from payload
+        message = payload.get("message", {})
+        user = payload.get("user", {})
+        message_ts = message.get("ts", "")
+        channel_id = payload.get("channel", {}).get("id", "")
         if action_id == "feedback_helpful":
-            # Get message details from payload
-            message = payload.get("message", {})
-            user = payload.get("user", {})
-            message_ts = message.get("ts", "")
-            
             # Load chat history to determine command type
             history = load_chat_history(user.get("id"))
             history_entry = None
@@ -56,6 +58,80 @@ async def process_feedback(payload: Dict[str, Any]) -> Dict[str, str]:
         elif action_id == "feedback_not_helpful":
             logger.info("[FEEDBACK] Received negative feedback")
             return {"text": "Thanks for your feedback. We'll work on improving! 🎯"}
+            
+        elif action_id == "summarize":
+            logger.info(f"[FEEDBACK] Processing summarize action for message_ts: {message_ts}")
+            
+            # Load chat history to get original query and results
+            history = load_chat_history(user.get("id"))
+            history_entry = None
+            
+            # Find the matching entry in history using message_ts
+            # For Excel files, we need to look for the original message
+            for entry in reversed(history):
+                if entry.get("message_ts") == message_ts:
+                    history_entry = entry
+                    break
+            
+            if not history_entry:
+                logger.error(f"[FEEDBACK] Could not find history entry for message_ts: {message_ts}")
+                return {"text": "Could not find original query data."}
+            
+            # Get the AI to summarize the data
+            try:
+                client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+                logger.info(f"""/n/n/n/n
+                        Original question: {history_entry.get('question')}
+                        SQL Query: {history_entry.get('sql_query')}
+                        Results: {history_entry.get('response')}
+                        
+                        Please provide a summary of the data and key insights.
+                        /n/n/n/n""")
+                response = await client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are a data analyst. Summarize the query results in a clear, concise way. Focus on key insights and patterns."},
+                        {"role": "user", "content": f"""
+                        Original question: {history_entry.get('question')}
+                        SQL Query: {history_entry.get('sql_query')}
+                        Results: {history_entry.get('response')}
+                        
+                        Please provide a summary of the data and key insights.
+                        """}
+                    ],
+                    temperature=0.3
+                )
+                
+                summary = response.choices[0].message.content
+                logger.info(f"[FEEDBACK] Generated summary: {summary}")
+
+                # Send summary as a thread reply
+                from api.utils.message_utils import slack_client
+                thread_response = slack_client.chat_postMessage(
+                    channel=channel_id,
+                    thread_ts=message_ts,  # This creates a thread
+                    text=f"*Data Summary:*\n{summary}",
+                    blocks=[
+                        {
+                            "type": "section",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": f"*Data Summary:*\n{summary}"
+                            }
+                        }
+                    ]
+                )
+                
+                if not thread_response["ok"]:
+                    logger.error(f"[FEEDBACK] Error sending thread response: {thread_response.get('error')}")
+                    return {"text": "Error sending summary. Please try again."}
+                
+                # Return empty response since we've already sent the message
+                return {"text": ""}
+                
+            except Exception as e:
+                logger.error(f"Error generating summary: {e}")
+                return {"text": "Sorry, I couldn't generate a summary at this time."}
             
         else:
             logger.error(f"[FEEDBACK] Unknown action_id: {action_id}")
