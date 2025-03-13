@@ -1,0 +1,70 @@
+{
+    "display_information": {
+        "name": "BotAnalytics",
+        "description": "Natural language to SQL converter for analytics data queries",
+        "background_color": "#004492",
+        "long_description": "AnalyticsBot is an intelligent analytics assistant that converts natural language questions into SQL queries. Access your analytics data directly in Slack using simple commands like /sql, /ask, or /graph. Get instant insights about business logic, premium users, free trials, and listening impressions. Supports data visualization and interactive responses for better data understanding.\\n\\nKey features:\\n- Natural language to SQL conversion\\n- Quick data visualization\\n- Support for multiple data sources\\n- Real-time analytics queries\\n- Interactive data exploration"
+    },
+    "features": {
+        "bot_user": {
+            "display_name": "BotAnalytics",
+            "always_online": true
+        },
+        "slash_commands": [
+            {
+                "command": "/help",
+                "url": "https://29f2-45-117-30-131.ngrok-free.app/slack/command",
+                "description": "get commands",
+                "should_escape": false
+            },
+            {
+                "command": "/ask",
+                "url": "https://29f2-45-117-30-131.ngrok-free.app/slack/command",
+                "description": "Get data by running sql query",
+                "should_escape": false
+            },
+            {
+                "command": "/sql",
+                "url": "https://29f2-45-117-30-131.ngrok-free.app/slack/command",
+                "description": "get sql query",
+                "should_escape": false
+            },
+            {
+                "command": "/graph",
+                "url": "https://29f2-45-117-30-131.ngrok-free.app/slack/command",
+                "description": "Generate SQL query and graph for your question",
+                "should_escape": false
+            }
+        ],
+        "interactivity": {
+            "is_enabled": true,
+            "request_url": "https://29f2-45-117-30-131.ngrok-free.app/slack/interactivity"
+        }
+    },
+    "oauth_config": {
+        "scopes": {
+            "bot": [
+                "commands",
+                "chat:write",
+                "files:write",
+                "reactions:write",
+                "reactions:read",
+                "im:history",
+                "im:write",
+                "channels:history",
+                "groups:history",
+                "mpim:history",
+                "chat:write.public",
+                "chat:write.customize"
+            ]
+        }
+    },
+    "settings": {
+        "org_deploy_enabled": false,
+        "socket_mode_enabled": false,
+        "token_rotation_enabled": false,
+        "interactivity": {
+            "is_enabled": true
+        }
+    }
+}
